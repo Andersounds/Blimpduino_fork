@@ -357,9 +357,23 @@ void loop()
       m_set(mL, mRight_Value, 4);
       break;
 
-    case 100: //No UDP data received.
+    case 100:{ //No UDP data received.
       m_stopAll();//<----Add
+      // Start of custom code
+      int16_t roll = 0;
+      int16_t pitch = 0;
+      int16_t height = (int16_t) laser_height;
+      int err = writeToRpi(roll,pitch,height);
+      delay(1000);
+      byte singleByte = 0b00100000;
+      //int err = writeOneByteToRpi(singleByte);
+      if(err!=0){
+        SerialUSB.println("Something wrong in write to rpi"); 
+      }
+   
+      //End of custom code
       break;
+    }
 
     case 101: //Reserved for low battery
       m_stopAll();//<----Add Low Battery Routine HERE.
