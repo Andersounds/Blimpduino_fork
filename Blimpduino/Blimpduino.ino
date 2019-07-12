@@ -360,16 +360,62 @@ void loop()
     case 100:{ //No UDP data received.
       m_stopAll();//<----Add
       // Start of custom code
+      float messageRPI[3] = {1,2,(float)laser_height};
+      int stat = writeToRpi(messageRPI,3);
+      if(stat<0){
+        SerialUSB.println("Something wrong in write to rpi"); 
+      }else{
+        SerialUSB.println("Wrote to rpi i think??"); 
+      }
+      delay(2000);
+    /*  
       int16_t roll = 0;
       int16_t pitch = 0;
       int16_t height = (int16_t) laser_height;
-      int err = writeToRpi(roll,pitch,height);
-      delay(1000);
+      //int err = writeToRpi(roll,pitch,height);
+      //delay(1000);
+      static uint8_t cntr = 0;
       byte singleByte = 0b00100000;
-      //int err = writeOneByteToRpi(singleByte);
+      SerialUSB.print("Writing 3x ");
+      SerialUSB.print(cntr,DEC);
+      SerialUSB.print(" to rpi\n");
+        
+      int err = writeOneByteToRpi(cntr);
+      err = writeOneByteToRpi(cntr);
+      err = writeOneByteToRpi(cntr);
       if(err!=0){
         SerialUSB.println("Something wrong in write to rpi"); 
       }
+      cntr++;
+      delay(1000);
+*/
+      
+    
+//     *  rpi to atsam test code
+ //    * SerialUSB.println("Requesting 33 bytes from rpi"); 
+   /* int bytes = Wire.requestFrom(0x03, 33);//Request two bytes from rpi
+    if(bytes<=0){
+    SerialUSB.println("No answer from rpi. releasing bus and moving on");    
+    }else{
+        SerialUSB.print("Rpi returned ");
+        SerialUSB.print(bytes);
+        SerialUSB.print("bytes, and there are ");
+        int availabl = Wire.available();
+        SerialUSB.print(availabl);
+        SerialUSB.print(" available bytes to read \n");
+        if(availabl>0){
+            SerialUSB.print("Buffer: ");
+            for(int i=0;i<=(availabl+3);i++){
+                char msg = Wire.read();
+                SerialUSB.print(msg,DEC);
+                SerialUSB.print(", ");
+            }   
+        }
+    }
+    */
+    //SerialUSB.print("\n Delaying 10 seconds...\n");
+    //delay(10000);
+  
    
       //End of custom code
       break;

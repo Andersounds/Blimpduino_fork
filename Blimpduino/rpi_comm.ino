@@ -22,29 +22,11 @@ Wire.requestFrom(address,quantity);   This is used by master to request data fro
 
 // I2C Addres of RPI slave
 byte RPI_I2C_ADDRESS = 0x03;
-//Rpi slave register map
-#define RPI_I2C_PITCH    0x01   // W
-#define RPI_I2C_ROLL     0x02   // W
-#define RPI_I2C_YAW      0x02   // R
-#define RPI_I2C_X        0x02   // R
-#define RPI_I2C_Y        0x02   // R
-#define RPI_I2C_Z        0x02   // R
-
-#define RPI_I2C_LOW_BAT  0x02   // 
-#define RPI_I2C_HDNG     0x02   // 
+//Encode, decode scales
+float scales_i2c[4] = {1,10,100,1000};
+int rpi_encode_scale = 2; //The scale used when encoding floats that are sent to rpi
 
 
-//Maybe send a struct like this?
-  struct
-  {
-    int16_t x_accel;
-    int16_t y_accel;
-    int16_t z_accel;
-    int16_t temperature;
-    int16_t x_gyro;
-    int16_t y_gyro;
-    int16_t z_gyro;
-  } value;
 
 
 int writeOneByteToRpi(byte data){
@@ -58,14 +40,15 @@ int writeOneByteToRpi(byte data){
 
 
 
-int writeToRpi(int16_t roll,int16_t pitch,int16_t height_s){//dim(roll, pitch): [rad*100], dim(height):[cm]
+int writeToRpi(char info,int16_t roll,int16_t pitch,int16_t height_s){//dim(roll, pitch): [rad*100], dim(height):[cm]
     // Bit shifting of signed integers have undefined behaviour.
     // Send an additional byte called info where the sign of the variables are encoded, possibly together with additional info
   
     //the three lowest bits of the info byte encode the sign of the variables  if(x>0):1, if(x<0):0
-    uint8_t info =(roll>0)<<2 | (pitch>0)<<1 | (height>0);
+    //Mask to keep the upper 5 bits and set the lower 3 bits according to the sign of the values
+    uint8_t info_sign =(info&0xF8)|((roll>0)<<2 | (pitch>0)<<1 | (height>0));
     //Construct a byte-array of length 7 with info and unsigned high byte, low byte of roll, pitch, height
-    char data[7] = {info,
+    char data[7] = {(char)info_sign,
                     (char)(abs(roll)>>8), ((char)roll&0xFF),
                     (char)(abs(pitch)>>8), ((char)pitch&0xFF),
                     (char)(abs(height)>>8), ((char)height&0xFF)};
@@ -98,9 +81,61 @@ SerialUSB.print("Laser height: "); SerialUSB.print(height,BIN);SerialUSB.print('
     status = Wire.write(&data_arr[1],1);//
     status = Wire.write(&data_arr[2],1);//
     */
-
-
  
     status = Wire.endTransmission(true);             // Send the buffer content to rpi and release bus
     return status; 
 }
+
+
+/*
+//Info byte
+07 06 05 04 03 02 01 00
+-  -  A  A  A  S  S  ID
+//Sign byte
+07 06 05 04 03 02 01 00
+            S3 S2 S1 ID
+//Data bytes
+07 - 01              00
+<data>               ID
+//Legend
+ID:     bit identifying the info-byte. 1: info byte, 0: data or sign byte
+S:      bits encoding the scale of floats. 00: 1, 01:10, 10:100, 11:1000
+A:      bits encoding the message length. 1-7 bytes.
+SX:     Bit identifying the sign of float X. 1: neg, 0: pos
+
+Each float is encoded as 7 high bits and 7 low bits in that order.
+*/
+
+
+
+//int encodeData()
+
+//int decodeData()
+
+int writeToRpi(float* msg, int sizeOf){//does not have to be float!
+    if(sizeOf>16){return -1;}//Too large value
+    uint8_t txbuffer[16];
+    uint8_t infoByte = (uint8_t (rpi_encode_scale<<1))|0b1; //Info bit with encoded scale code and info byte identification bit
+    infoByte|= ((uint8_t)sizeOf<<3); //Encode message size in info bit (0-7 bytes)
+    uint8_t signByte = 0;
+    int bufferIndex = 2;//start value of data fields in tx buffer
+    int size_of_tx_msg = sizeOf*2+2;//Size of complete message in bytes
+    for(int i=0;i<sizeOf;i++){
+        uint16_t unsignedScaleValue = (uint16_t)abs( (int)(msg[i]*scales_i2c[rpi_encode_scale]) );//Scale, remove sign, and cast the float
+        uint8_t HB = (unsignedScaleValue>>7)&0xFE;
+        uint8_t LB = (unsignedScaleValue<<1)&0xFE;
+        signByte|=(uint8_t)((msg[i]<0)<<i);//Set sign bit in sign byte
+        txbuffer[bufferIndex] = HB;
+        txbuffer[bufferIndex+1] = LB;
+        bufferIndex+=2;
+    }
+    txbuffer[0] = infoByte;
+    txbuffer[1] = signByte;
+//Write to buffer
+    Wire.beginTransmission(RPI_I2C_ADDRESS);// Take control of bus and prepare to sent to rpi
+    int status = Wire.write(txbuffer,size_of_tx_msg);//Or do not have &? or give txbuffer[0] ? should be same
+    status = Wire.endTransmission(true);             // Send the buffer content to rpi and release bus
+    return status;
+}
+
+//int readFromRpi()
