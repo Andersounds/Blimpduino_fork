@@ -24,7 +24,7 @@ Wire.requestFrom(address,quantity);   This is used by master to request data fro
 byte RPI_I2C_ADDRESS = 0x03;
 //Encode, decode scales
 float scales_i2c[4] = {1,10,100,1000};
-int rpi_encode_scale = 2; //The scale used when encoding floats that are sent to rpi
+uint8_t rpi_encode_scale = 2; //The scale used when encoding floats that are sent to rpi
 
 
 
@@ -39,33 +39,30 @@ int writeOneByteToRpi(byte data){
 }
 
 
-
-int writeToRpi(char info,int16_t roll,int16_t pitch,int16_t height_s){//dim(roll, pitch): [rad*100], dim(height):[cm]
+/*
+int writeToRpi(char info,int16_t roll,int16_t pitch,int16_t height_s) { //dim(roll, pitch): [rad*100], dim(height):[cm]
     // Bit shifting of signed integers have undefined behaviour.
     // Send an additional byte called info where the sign of the variables are encoded, possibly together with additional info
   
     //the three lowest bits of the info byte encode the sign of the variables  if(x>0):1, if(x<0):0
     //Mask to keep the upper 5 bits and set the lower 3 bits according to the sign of the values
-    uint8_t info_sign =(info&0xF8)|((roll>0)<<2 | (pitch>0)<<1 | (height>0));
+    uint8_t info =(info&0xF8);
+    uint8_t sign = (uint8_t)((roll>0)<<2 | (pitch>0)<<1 | (height>0));
     //Construct a byte-array of length 7 with info and unsigned high byte, low byte of roll, pitch, height
     char data[7] = {(char)info_sign,
                     (char)(abs(roll)>>8), ((char)roll&0xFF),
                     (char)(abs(pitch)>>8), ((char)pitch&0xFF),
                     (char)(abs(height)>>8), ((char)height&0xFF)};
  
- uint8_t data_uint8 = 114;
-
- uint8_t data_arr[3] = {114,56,200};
-SerialUSB.print("Laser height: "); SerialUSB.print(height,BIN);SerialUSB.print('\n');
+    uint8_t data_uint8 = 114;
+    uint8_t data_arr[3] = {114,56,200};
+    SerialUSB.print("Laser height: "); SerialUSB.print(height,BIN);SerialUSB.print('\n');
 //SerialUSB.print("HB: "); SerialUSB.print(data[4],BIN);SerialUSB.print('\n');
 //SerialUSB.print("LB: "); SerialUSB.print(data[5],BIN);SerialUSB.print('\n');
-
     //  uint16_t hb = data[4]<<8;
      // uint16_t lb = data[5];
       //uint16_t rebuild = hb | lb;
-//SerialUSB.print("Rebuild: ");     SerialUSB.print(rebuild,BIN);
-
-      
+//SerialUSB.print("Rebuild: ");     SerialUSB.print(rebuild,BIN);  
       //SerialUSB.println("\n");  
     size_t dataLength = 6;//Hardcoded length
     int status;
@@ -80,12 +77,12 @@ SerialUSB.print("Laser height: "); SerialUSB.print(height,BIN);SerialUSB.print('
     /*status = Wire.write(&data_arr[0],1);//Dessa också
     status = Wire.write(&data_arr[1],1);//
     status = Wire.write(&data_arr[2],1);//
-    */
+    
  
     status = Wire.endTransmission(true);             // Send the buffer content to rpi and release bus
     return status; 
 }
-
+*/
 
 /*
 //Info byte
@@ -113,17 +110,18 @@ Each float is encoded as 7 high bits and 7 low bits in that order.
 //int decodeData()
 
 int writeToRpi(float* msg, int sizeOf){//does not have to be float!
-    if(sizeOf>16){return -1;}//Too large value
+    if(sizeOf>7){return -1;}//Too large value
     uint8_t txbuffer[16];
-    uint8_t infoByte = (uint8_t (rpi_encode_scale<<1))|0b1; //Info bit with encoded scale code and info byte identification bit
+    uint8_t infoByte = 0b1; //Info byte with info byte identification bit
+    infoByte|=((uint8_t)(rpi_encode_scale<<1));//Encode scale
     infoByte|= ((uint8_t)sizeOf<<3); //Encode message size in info bit (0-7 bytes)
     uint8_t signByte = 0;
     int bufferIndex = 2;//start value of data fields in tx buffer
     int size_of_tx_msg = sizeOf*2+2;//Size of complete message in bytes
     for(int i=0;i<sizeOf;i++){
         uint16_t unsignedScaleValue = (uint16_t)abs( (int)(msg[i]*scales_i2c[rpi_encode_scale]) );//Scale, remove sign, and cast the float
-        uint8_t HB = (unsignedScaleValue>>7)&0xFE;
-        uint8_t LB = (unsignedScaleValue<<1)&0xFE;
+        uint8_t HB = (uint8_t)(unsignedScaleValue>>6)&0xFE;
+        uint8_t LB = (uint8_t)(unsignedScaleValue<<1)&0xFE;
         signByte|=(uint8_t)((msg[i]<0)<<i);//Set sign bit in sign byte
         txbuffer[bufferIndex] = HB;
         txbuffer[bufferIndex+1] = LB;
@@ -138,4 +136,47 @@ int writeToRpi(float* msg, int sizeOf){//does not have to be float!
     return status;
 }
 
-//int readFromRpi()
+
+int readFromRpi(float* msg){
+    float recieved_values[3];
+    int bytes = Wire.requestFrom(0x03, 16);//Request everything that the rpi has.
+    if(bytes<=0){SerialUSB.println("No answer from rpi. releasing bus and moving on\n");return 0;}
+    int availabl = Wire.available();
+    SerialUSB.print("Available to read: ");SerialUSB.print(availabl);SerialUSB.print(" bytes\n");
+    uint8_t rx_buffer[availabl];
+    int info_byte_index = 100; //If this value is kept then info byte has not been found
+    int sgn_byte_index;
+    for(int i=0;i<availabl;i++){
+      uint8_t rx_byte = Wire.read();
+      rx_buffer[i] = rx_byte;
+      if(rx_byte&0b1){
+        info_byte_index = i;
+        sgn_byte_index = i+1;
+      }
+    }
+    //Check that whole message is available. if not then return
+    if(info_byte_index==100){return -3;}
+    if((info_byte_index+7)>=availabl){
+        return -2;
+    }
+    uint8_t info_byte = rx_buffer[info_byte_index];
+    uint8_t sgn_byte = rx_buffer[sgn_byte_index];
+    int scale_id = (int)((info_byte>>1)&0b11);
+    float scale_decode = scales_i2c[scale_id];
+    int sign_index = 0;//
+    for(int floatindex = info_byte_index+2;floatindex<(info_byte_index+6);floatindex+=2){
+      //  uint8_t HB = rx_buffer[floatindex]>>1;
+       // uint8_t LB = rx_buffer[floatindex+1]>>1;
+        uint16_t scaledValue = (rx_buffer[floatindex]<<6)|(rx_buffer[floatindex+1]>>1);
+        SerialUSB.print("RX: ");SerialUSB.print(scaledValue);SerialUSB.print("\n");
+        float value = ((float)scaledValue);///(scale_decode;
+        if((sgn_byte>>sign_index)&0b1){
+            value*=-1;
+        }
+        recieved_values[sign_index] = value;
+        sign_index++;
+    }
+    return (sign_index + 1);//Amount of decoded floats
+}
+
+

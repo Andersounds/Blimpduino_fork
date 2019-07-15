@@ -360,14 +360,34 @@ void loop()
     case 100:{ //No UDP data received.
       m_stopAll();//<----Add
       // Start of custom code
-      float messageRPI[3] = {1,2,(float)laser_height};
+      float messageRPI[3] = {1,2,(float)laser_height/1000};
       int stat = writeToRpi(messageRPI,3);
-      if(stat<0){
-        SerialUSB.println("Something wrong in write to rpi"); 
-      }else{
-        SerialUSB.println("Wrote to rpi i think??"); 
+      switch(stat){
+        case 0:{SerialUSB.println("Success wrote to pi!");break;}
+        case 1:{SerialUSB.println("Data too long for tx buffer");break;}
+        case 2:{SerialUSB.println("Recieved NACK on transmit of address");break;}
+        case 3:{SerialUSB.println("Recieved NACK on transmit of data");break;}
+        case 4:{SerialUSB.println("Some error in i2c transmit");break;}
+        }
+
+      delay(2000);
+
+
+      float recv_values[3];
+      int recieved_floats = readFromRpi(recv_values);
+      switch(recieved_floats){
+          case -3:{SerialUSB.println("No ID byte.");break;}
+          case -2:{SerialUSB.println("Complete message did not fit in rx buffer. discarding");break;}
+          case 0:{ SerialUSB.println("No bytes recieved from rpi. moving on...");break;}        
+          default:{SerialUSB.print("Recieved ");SerialUSB.print(recieved_floats);SerialUSB.print(" floats.\n");
+              for(int i=0;i< recieved_floats;i++){
+                  SerialUSB.print(recv_values[i]);SerialUSB.print(", ");
+              }
+              SerialUSB.print("\n");
+          }  
       }
       delay(2000);
+      
     /*  
       int16_t roll = 0;
       int16_t pitch = 0;
