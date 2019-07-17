@@ -373,6 +373,11 @@ void loop()
       delay(2000);
 
 
+
+      //Clear wire.
+      while(Wire.available()){
+        Wire.read();
+      }
       float recv_values[3];
       int recieved_floats = readFromRpi(recv_values);
       switch(recieved_floats){

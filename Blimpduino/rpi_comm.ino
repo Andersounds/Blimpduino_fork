@@ -21,7 +21,7 @@ Wire.requestFrom(address,quantity);   This is used by master to request data fro
 
 
 // I2C Addres of RPI slave
-byte RPI_I2C_ADDRESS = 0x03;
+byte RPI_I2C_ADDRESS = 0x04;
 //Encode, decode scales
 float scales_i2c[4] = {1,10,100,1000};
 uint8_t rpi_encode_scale = 2; //The scale used when encoding floats that are sent to rpi
@@ -138,45 +138,45 @@ int writeToRpi(float* msg, int sizeOf){//does not have to be float!
 
 
 int readFromRpi(float* msg){
-    float recieved_values[3];
-    int bytes = Wire.requestFrom(0x03, 16);//Request everything that the rpi has.
+    //float recieved_values[3];
+    int bytes = Wire.requestFrom(RPI_I2C_ADDRESS, 16);//Request everything that the rpi has. If buffer is not full then last byte will repeat
     if(bytes<=0){SerialUSB.println("No answer from rpi. releasing bus and moving on\n");return 0;}
-    int availabl = Wire.available();
-    SerialUSB.print("Available to read: ");SerialUSB.print(availabl);SerialUSB.print(" bytes\n");
-    uint8_t rx_buffer[availabl];
-    int info_byte_index = 100; //If this value is kept then info byte has not been found
+    uint8_t rx_buffer[16];
+    int info_byte_index = -1; //If this value is kept then info byte has not been found
     int sgn_byte_index;
-    for(int i=0;i<availabl;i++){
-      uint8_t rx_byte = Wire.read();
-      rx_buffer[i] = rx_byte;
-      if(rx_byte&0b1){
-        info_byte_index = i;
-        sgn_byte_index = i+1;
-      }
+    int msgSize = 0;
+    int i = 0;
+    while(Wire.available()){//Empty the whole buffer
+        rx_buffer[i] = Wire.read();       //Read one byte to buffer
+        uint8_t rx_byte = rx_buffer[i];
+        if(rx_byte&0b1){                  //Check if it is the info byte
+            //Here there should be a check of what message type it is and a switch-case that either reads at uint8:s or floats. not necessary yet
+            int msgSize_temp = (int)((rx_byte>>3)&0b111); //Decode message size (In no of floats)
+            if((i+1+2*msgSize_temp)<16){                  //Check if whole message can be decoded. i.e. if the complete message of the this info byte can fit in the rest of the buffer.
+                info_byte_index = i;          //Set info byte index
+                sgn_byte_index = i+1;         //Set info byte index
+                msgSize = msgSize_temp;
+            }//Can do an additional check here. If above is false, and info_byte_index == -1 i.e there are no other messages, then return another error code.
+        }
+        i++;
     }
-    //Check that whole message is available. if not then return
-    if(info_byte_index==100){return -3;}
-    if((info_byte_index+7)>=availabl){
-        return -2;
-    }
+    if(info_byte_index==-1){return -3;}
     uint8_t info_byte = rx_buffer[info_byte_index];
     uint8_t sgn_byte = rx_buffer[sgn_byte_index];
-    int scale_id = (int)((info_byte>>1)&0b11);
-    float scale_decode = scales_i2c[scale_id];
+    int scale_id = (int)((info_byte>>1)&0b11);//Get scale code
+    float scale_decode = scales_i2c[scale_id];//Get corresponding actual scale
     int sign_index = 0;//
-    for(int floatindex = info_byte_index+2;floatindex<(info_byte_index+6);floatindex+=2){
-      //  uint8_t HB = rx_buffer[floatindex]>>1;
-       // uint8_t LB = rx_buffer[floatindex+1]>>1;
-        uint16_t scaledValue = (rx_buffer[floatindex]<<6)|(rx_buffer[floatindex+1]>>1);
-        SerialUSB.print("RX: ");SerialUSB.print(scaledValue);SerialUSB.print("\n");
-        float value = ((float)scaledValue);///(scale_decode;
-        if((sgn_byte>>sign_index)&0b1){
+    for(int floatindex=2;floatindex<=(msgSize*2);floatindex+=2){
+        int i = info_byte_index + floatindex;//Index of HB of the float. LB index is i+1
+        int scaledValue = (int)((rx_buffer[i]<<6)|(rx_buffer[i+1]>>1));//build HB and LB to a int
+        float value = ((float)scaledValue)/scale_decode;
+        if((sgn_byte>>sign_index)&0b1){//Flip sign to neg if it is stated
             value*=-1;
         }
-        recieved_values[sign_index] = value;
+        msg[sign_index] = value;
         sign_index++;
     }
-    return (sign_index + 1);//Amount of decoded floats
+    return (sign_index);//Amount of decoded floats. One more than sign index of last. it is incremented
 }
 
 
