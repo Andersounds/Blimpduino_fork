@@ -17,6 +17,9 @@ void Dameon_Loop(void) { //Background stuff.
     mpu_newDataReady = 1; //Little flag to know when new data is ready.
     MPU_dt = (timer_mpu - timer_mpu_old) * 0.000001; //Calculating the time elpased between the past and the present MPU reading and converting to seconds.
     MPU_yaw_angle = MPU6050_yawAngle(MPU_dt);
+    /*  BELOW HERE ARE CUSTOM FUNCTIONS FOR ROLL/PITCH CALCULATION*/
+
+    /*-----------------FINAL LINE OF CUSTOM CODE------------------*/
     timer_mpu_old = timer_mpu; //Timer reset so we can calculate the elapsed time between this reading and the one that will arrive in the future.
 
   }
