@@ -134,6 +134,11 @@ int mVertical_Value = 0;
 int16_t T1_imu[3] = {0,1,0}; //Row 1 of T matrix
 int16_t T2_imu[3] = {-1,0,0}; //Row 2 of T matrix
 int16_t T3_imu[3] = {0,0,1}; //Row 3 of T matrix
+
+//Gyro offsets for
+float GYRO_OFFSETS_X_Y[2] = {0,0};
+MPU6050_calibrate_x_y(GYRO_OFFSETS_X_Y);
+
 // INITIALIZATION
 void setup()
 {
