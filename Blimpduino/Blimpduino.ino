@@ -130,6 +130,10 @@ int mRight_Value = 0;
 int mLeft_Value = 0;
 int mVertical_Value = 0;
 
+// Global variable used by roll/pitch sensing. T matrix is rotation matrix from UAV to IMU
+int16_t T1_imu[3] = {0,1,0}; //Row 1 of T matrix
+int16_t T2_imu[3] = {-1,0,0}; //Row 2 of T matrix
+int16_t T3_imu[3] = {0,0,1}; //Row 3 of T matrix
 // INITIALIZATION
 void setup()
 {
