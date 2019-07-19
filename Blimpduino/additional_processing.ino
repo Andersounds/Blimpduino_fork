@@ -23,43 +23,47 @@ void printAccel(void){
         SerialUSB.print("Z: ");SerialUSB.print(accel_t_gyro.value.z_accel);SerialUSB.print(" rad\n");
 }
 
- float MPU6050_pitchAngle(void)
+/* This function takes IMU acceleration values, transforms them from IMU to UAV frame according to the global T-matrix (T1_imu, T2_imu,T3_imu)
+ * It then uses the acceleration values to calculate the pitch and roll angle of the UAV within the range +-pi/2. Angles may not superceed these limit
+ * 
+ */
+int MPU6050_Acc_Pitch_Roll_Angle(float* pitchRoll)
 {
   //Calculate pitch and roll according to
   // https://wiki.dfrobot.com/How_to_Use_a_Three-Axis_Accelerometer_for_Tilt_Sensing
-  // Note that no UAV to IMU mat is defined separately, i just use other axles. ie uav(y) = -imu(x), uav(x)=imu(y), uav(z)=imu(z)
 
-  float Gpx = (float)accel_t_gyro.value.y_accel;
-  float Gpy = (float)-accel_t_gyro.value.x_accel;
-  float Gpz = (float)accel_t_gyro.value.z_accel;
-  float num_ = -Gpx;
-  float den_ = sqrt(Gpy*Gpy + Gpz*Gpz);
-  float accel_pitch_angle = atan(num_/den_);
+  // Calculate sensor values in UAV frame from IMU frame via T matrix (Defined as global)
+  int16_t Gpx = (accel_t_gyro.value.x_accel*T1_imu[0] + accel_t_gyro.value.y_accel*T1_imu[1] + accel_t_gyro.value.z_accel*T1_imu[2]);
+  int16_t Gpy = (accel_t_gyro.value.x_accel*T2_imu[0] + accel_t_gyro.value.y_accel*T2_imu[1] + accel_t_gyro.value.z_accel*T2_imu[2]);
+  int16_t Gpz = (accel_t_gyro.value.x_accel*T3_imu[0] + accel_t_gyro.value.y_accel*T3_imu[1] + accel_t_gyro.value.z_accel*T3_imu[2]);
   
-  return accel_pitch_angle;
+  float num_P = (float)-Gpx;
+  float den_P = sqrt((float)(Gpy*Gpy + Gpz*Gpz));
+  float num_R = (float)Gpy;
+  float den_R = (float)Gpz;
+  pitchRoll[0] = atan(num_P/den_P); //Pitch angle
+  pitchRoll[1] = atan(num_R/den_R); //Roll angle
+  
+  return 1;
   //float accel_roll_angle = atan2f((float)accel_t_gyro.value.y_accel, (float)accel_t_gyro.value.z_accel)
   // LP of acc
   // Integrate + HP of gyro
   // Fusing?
 }
 
-float MPU6050_rollAngle(void)
-{
-  //float accel_roll_angle = atan2f((float)-accel_t_gyro.value.x_accel, (float)accel_t_gyro.value.z_accel);
-   float accel_roll_angle = atan((float)-accel_t_gyro.value.x_accel/(float)accel_t_gyro.value.z_accel);
-  return accel_roll_angle;
-  //z_gyro_value = (accel_t_gyro.value.z_gyro - z_gyro_offset) / 65.5;  // Accel scale at 500deg/seg  => 65.5 LSB/deg/s
-  //yawAngle = yawAngle + z_gyro_value * dt;
-  //return yawAngle;
-}
 
 //These do not consided uav to imu transofmration. just choose the axle which correspond to the physical direction
-float MPU6050_pitchRate(void){
-  return (float)-accel_t_gyro.value.x_gyro*500.0/32767.0;
-}
+int MPU6050_Gyro_Pitch_Roll_Rate(float* pitchRollRate,bool calib){
+  static float gyroToRadsPSec = RAD2GRAD*500.0/32767.0;//500 is one sided range as set in initialization. 32767 is bit range. 
+  // Calculate sensor values in UAV frame from IMU frame via T matrix (Defined as global)
+  int16_t Grx = (accel_t_gyro.value.x_gyro*T1_imu[0] + accel_t_gyro.value.y_gyro*T1_imu[1] + accel_t_gyro.value.z_gyro*T1_imu[2]);
+  int16_t Gry = (accel_t_gyro.value.x_gyro*T2_imu[0] + accel_t_gyro.value.y_gyro*T2_imu[1] + accel_t_gyro.value.z_gyro*T2_imu[2]);
+  //int16_t Grz = (accel_t_gyro.value.x_accel*T3_imu[0] + accel_t_gyro.value.y_accel*T3_imu[1] + accel_t_gyro.value.z_accel*T3_imu[2]);
+  
+  pitchRollRate[0] = ((float)Gry)*gyroToRadsPSec;//Pitch rate expressed in rads/sec. 
+  pitchRollRate[1] = ((float)Grx)*gyroToRadsPSec;//Roll rate expressed in rads/sec
 
-float MPU6050_rollRate(void){
-  return (float)accel_t_gyro.value.y_gyro*500.0/32767.0;
+  return 1;
 }
 
 
