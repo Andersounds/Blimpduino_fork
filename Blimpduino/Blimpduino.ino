@@ -136,8 +136,9 @@ int16_t T2_imu[3] = {-1,0,0}; //Row 2 of T matrix
 int16_t T3_imu[3] = {0,0,1}; //Row 3 of T matrix
 
 //Gyro offsets for
-float GYRO_OFFSETS_X_Y[2] = {0,0};
-MPU6050_calibrate_x_y(GYRO_OFFSETS_X_Y);
+int16_t gyro_offsets_x_y[2] = {0,0};
+
+
 
 // INITIALIZATION
 void setup()
@@ -170,6 +171,7 @@ void setup()
   SerialUSB.println("Don't move for 10 sec...");
   MPU6050_setup();  // setup MPU6050 IMU at 50Hz
   delay(500);
+  MPU6050_calibrate_x_y(gyro_offsets_x_y);//Own calbration code.
 
   // With the new ESP8266 WIFI MODULE WE NEED TO MAKE AN INITIALIZATION PROCESS
   SerialUSB.println("WIFI init");
@@ -367,17 +369,22 @@ void loop()
       break;
 
     case 100:{ //No UDP data received.
-      m_stopAll();//<----Add
+        m_stopAll();//<----Add
+        float accPitchRoll[2];
+        float gyroPitchRoll[2];
 
+        MPU6050_Acc_Pitch_Roll_Angle(accPitchRoll);
+        MPU6050_Gyro_Pitch_Roll_Rate(gyroPitchRoll);
 
-      float pitchangl = MPU6050_pitchAngle();
-      float rollangl = MPU6050_rollAngle();
+    //  float pitchangl = MPU6050_pitchAngle();
+    //  float rollangl = MPU6050_rollAngle();
      // printAccel();
 
-     float pRate_ = MPU6050_pitchRate();
-     float rRate_ = MPU6050_rollRate();
+     //float pRate_ = MPU6050_pitchRate();
+     //float rRate_ = MPU6050_rollRate();
 //SerialUSB.print("Pitch: ");SerialUSB.print(pitchangl);SerialUSB.print(", Roll: ");SerialUSB.print(rollangl);SerialUSB.print(" rad\n");
-SerialUSB.print("Pitch: ");SerialUSB.print(pRate_);SerialUSB.print(", Roll: ");SerialUSB.print(rRate_);SerialUSB.print(" deg/s \n");
+SerialUSB.print("Pitch: ");SerialUSB.print(accPitchRoll[0]);SerialUSB.print(", Roll: ");SerialUSB.print(accPitchRoll[1]);SerialUSB.print(" rad\n");
+SerialUSB.print("Pitchrate: ");SerialUSB.print(gyroPitchRoll[0]);SerialUSB.print(", Rollrate: ");SerialUSB.print(gyroPitchRoll[1]);SerialUSB.print(" deg/s \n");
       delay(60);
       
  /*     
