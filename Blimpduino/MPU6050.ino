@@ -466,6 +466,8 @@ typedef union accel_t_gyro_union
 accel_t_gyro_union accel_t_gyro;
 float x_gyro_value;   // in deg/seg units
 float x_gyro_offset = 0.0;
+float y_gyro_value;                       //Added this line /Fred
+float y_gyro_offset = 0.0;                //Added this line /Fred
 float z_gyro_value;   // in deg/seg units
 float z_gyro_offset = 0.0;
 float accel_angle;  // in degree units
@@ -513,12 +515,19 @@ float MPU6050_getAngle(float dt)
 }
 
 // Calibrate function. Take 100 readings (over 2 seconds) to calculate the gyro offset value. IMU should be steady in this process...
+// Adapted with lines marked "//" to also calibrate x and y axis /Fred
 void MPU6050_calibrate()
 {
   int i;
   long value = 0;
+  long value_x = 0;//
+  long value_y = 0;//
   float dev;
+  float dev_x = 0;//
+  float dev_y = 0;//
   int16_t values[100];
+  int16_t values_x[100];//
+  int16_t values_y[100];//
   bool gyro_cal_ok = false;
 
   delay(500);
@@ -530,25 +539,39 @@ void MPU6050_calibrate()
       MPU6050_read_3axis();
       values[i] = accel_t_gyro.value.z_gyro;  //x_gyro
       value += accel_t_gyro.value.z_gyro;   //x_gyro
+      values_x[i] = accel_t_gyro.value.x_gyro;  //
+      value_x += accel_t_gyro.value.x_gyro;   //
+      values_y[i] = accel_t_gyro.value.y_gyro;  //
+      value_y += accel_t_gyro.value.y_gyro;   //
       delay(25);
     }
     // mean value
     value = value / 100;
+    value_x = value_x / 100;//
+    value_y = value_y / 100;//
     // calculate the standard deviation
     dev = 0;
-    for (i = 0; i < 100; i++)
+    dev_x = 0;//
+    dev_y = 0;//
+    for (i = 0; i < 100; i++){
       dev += (values[i] - value) * (values[i] - value);
+      dev_x += (values_x[i] - value_x) * (values_x[i] - value_x);//
+      dev_y += (values_y[i] - value_y) * (values_y[i] - value_y);//
+    }
     dev = sqrt((1 / 100.0) * dev);
+    dev_x = sqrt((1 / 100.0) * dev_x);//
+    dev_y = sqrt((1 / 100.0) * dev_y);//
     SerialUSB.print("offset: ");
     SerialUSB.print(value);
     SerialUSB.print("  stddev: ");
     SerialUSB.println(dev);
-    if (dev < 100.0)
+    if ((dev < 100.0) && (dev_x<100.0) && (dev_y<100)) // Edited to test all deviations
       gyro_cal_ok = true;
     else
       SerialUSB.println("Repeat, DONT MOVE!");
   }
-  //x_gyro_offset = value;
+  x_gyro_offset = value_x;//
+  y_gyro_offset = value_y;//
   z_gyro_offset = value;
 
   yawAngle = 0;

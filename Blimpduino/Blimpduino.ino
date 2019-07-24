@@ -135,10 +135,6 @@ int16_t T1_imu[3] = {0,1,0}; //Row 1 of T matrix
 int16_t T2_imu[3] = {-1,0,0}; //Row 2 of T matrix
 int16_t T3_imu[3] = {0,0,1}; //Row 3 of T matrix
 
-//Gyro offsets for
-int16_t gyro_offsets_x_y[2] = {0,0};
-
-
 
 // INITIALIZATION
 void setup()
@@ -171,7 +167,6 @@ void setup()
   SerialUSB.println("Don't move for 10 sec...");
   MPU6050_setup();  // setup MPU6050 IMU at 50Hz
   delay(500);
-  MPU6050_calibrate_x_y(gyro_offsets_x_y);//Own calbration code.
 
   // With the new ESP8266 WIFI MODULE WE NEED TO MAKE AN INITIALIZATION PROCESS
   SerialUSB.println("WIFI init");

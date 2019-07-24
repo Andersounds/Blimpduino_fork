@@ -52,12 +52,11 @@ int MPU6050_Acc_Pitch_Roll_Angle(float* pitchRoll)
 }
 
 
-//These do not consided uav to imu transofmration. just choose the axle which correspond to the physical direction
 int MPU6050_Gyro_Pitch_Roll_Rate(float* pitchRollRate){
   static float gyroToRadsPSec = RAD2GRAD*500.0/32767.0;//500 is one sided range as set in initialization. 32767 is bit range.
   // Calculate sensor values in UAV frame from IMU frame via T matrix (Defined as global)
-  int16_t Grx = ((accel_t_gyro.value.x_gyro+gyro_offsets_x_y[0])*T1_imu[0] + (accel_t_gyro.value.y_gyro+gyro_offsets_x_y[1])*T1_imu[1] + accel_t_gyro.value.z_gyro*T1_imu[2]);
-  int16_t Gry = ((accel_t_gyro.value.x_gyro+gyro_offsets_x_y[0])*T2_imu[0] + (accel_t_gyro.value.y_gyro+gyro_offsets_x_y[1])*T2_imu[1] + accel_t_gyro.value.z_gyro*T2_imu[2]);
+  int16_t Grx = ((accel_t_gyro.value.x_gyro+x_gyro_offset)*T1_imu[0] + (accel_t_gyro.value.y_gyro+y_gyro_offset)*T1_imu[1] + (accel_t_gyro.value.z_gyro+z_gyro_offset)*T1_imu[2]);
+  int16_t Gry = ((accel_t_gyro.value.x_gyro+x_gyro_offset)*T2_imu[0] + (accel_t_gyro.value.y_gyro+y_gyro_offset)*T2_imu[1] + (accel_t_gyro.value.z_gyro+z_gyro_offset)*T2_imu[2]);
   //int16_t Grz = (accel_t_gyro.value.x_gyro*T3_imu[0] + accel_t_gyro.value.y_gyro*T3_imu[1] + accel_t_gyro.value.z_accel*T3_imu[2]);
   
   pitchRollRate[0] = ((float)Gry)*gyroToRadsPSec;//Pitch rate expressed in rads/sec. 
@@ -67,58 +66,4 @@ int MPU6050_Gyro_Pitch_Roll_Rate(float* pitchRollRate){
 }
 
 
-
-//This function is just taken from MPU6050 file. Adapt and make it calibrate in around x and y axis. save bias somewhere it can be used
-// Calibrate function. Take 100 readings (over 2 seconds) to calculate the gyro offset value. IMU should be steady in this process...
-void MPU6050_calibrate_x_y(int16_t* offsets)
-{
-  
-  int i;
-  long value_x = 0;
-  long value_y = 0;
-  float dev_x = 0;
-  float dev_y = 0;
-  int16_t values_x[100];
-  int16_t values_y[100];
-  bool gyro_cal_ok = false;
-
-  delay(500);
-  while (!gyro_cal_ok) {
-    SerialUSB.println("Gyro calibration x-y... DONT MOVE!");
-    // we take 100 measurements in 4 seconds
-    for (i = 0; i < 100; i++)
-    {
-      MPU6050_read_3axis();
-      values_x[i] = accel_t_gyro.value.x_gyro;  //x_gyro
-      value_x += accel_t_gyro.value.x_gyro;   //x_gyro
-      values_y[i] = accel_t_gyro.value.y_gyro;  //x_gyro
-      value_y += accel_t_gyro.value.y_gyro;   //x_gyro
-      delay(25);
-    }
-    // mean value
-    value_x = value_x / 100;
-    value_y = value_y / 100;
-    // calculate the standard deviation
-    dev_x = 0;
-    dev_y = 0;
-    for (i = 0; i < 100; i++){
-      dev_x += (values_x[i] - value_x) * (values_x[i] - value_x);
-      dev_y += (values_y[i] - value_y) * (values_y[i] - value_y);
-    }
-    dev_x = sqrt((1 / 100.0) * dev_x);
-    dev_y = sqrt((1 / 100.0) * dev_y);
-    
-    SerialUSB.print("offset x: ");
-    SerialUSB.print(value_x);
-    SerialUSB.print("  stddev x: ");
-    SerialUSB.println(dev_x);
-    if ((dev_x<100.0) && (dev_y<100))
-      gyro_cal_ok = true;
-    else
-      SerialUSB.println("Repeat, DONT MOVE!");
-  }
-  offsets[0] = (int16_t)value_x;
-  offsets[1] = (int16_t)value_y;
-}
-
-
+//Gyro calibration is done in the main calibration function. Added functionality for calculationf offsets for x and y direction as well
