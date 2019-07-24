@@ -55,8 +55,8 @@ int MPU6050_Acc_Pitch_Roll_Angle(float* pitchRoll)
 int MPU6050_Gyro_Pitch_Roll_Rate(float* pitchRollRate){
   static float gyroToRadsPSec = RAD2GRAD*500.0/32767.0;//500 is one sided range as set in initialization. 32767 is bit range.
   // Calculate sensor values in UAV frame from IMU frame via T matrix (Defined as global)
-  int16_t Grx = ((accel_t_gyro.value.x_gyro+x_gyro_offset)*T1_imu[0] + (accel_t_gyro.value.y_gyro+y_gyro_offset)*T1_imu[1] + (accel_t_gyro.value.z_gyro+z_gyro_offset)*T1_imu[2]);
-  int16_t Gry = ((accel_t_gyro.value.x_gyro+x_gyro_offset)*T2_imu[0] + (accel_t_gyro.value.y_gyro+y_gyro_offset)*T2_imu[1] + (accel_t_gyro.value.z_gyro+z_gyro_offset)*T2_imu[2]);
+  int16_t Grx = ((accel_t_gyro.value.x_gyro-x_gyro_offset)*T1_imu[0] + (accel_t_gyro.value.y_gyro-y_gyro_offset)*T1_imu[1] + (accel_t_gyro.value.z_gyro-z_gyro_offset)*T1_imu[2]);
+  int16_t Gry = ((accel_t_gyro.value.x_gyro-x_gyro_offset)*T2_imu[0] + (accel_t_gyro.value.y_gyro-y_gyro_offset)*T2_imu[1] + (accel_t_gyro.value.z_gyro-z_gyro_offset)*T2_imu[2]);
   //int16_t Grz = (accel_t_gyro.value.x_gyro*T3_imu[0] + accel_t_gyro.value.y_gyro*T3_imu[1] + accel_t_gyro.value.z_accel*T3_imu[2]);
   
   pitchRollRate[0] = ((float)Gry)*gyroToRadsPSec;//Pitch rate expressed in rads/sec. 
