@@ -79,7 +79,8 @@ float complFilterPitch(float dt, float accValue, float gyroValue){
     gyro_prev = gyroValue;
     gyro_filt_prev = gyro_filt;
 
-    return gyro_filt;//snorkAcc*acc_filt + snork2*gyro_filt;
+    //return gyro_filt;//snorkAcc*acc_filt + snork2*gyro_filt;
+    return snorkAcc*acc_filt + snork2*gyro_filt;
 }
 
 float complFilterRoll(float dt, float accValue, float gyroValue){
@@ -99,7 +100,8 @@ float complFilterRoll(float dt, float accValue, float gyroValue){
     gyro_prev = gyroValue;
     gyro_filt_prev = gyro_filt;
 
-    return acc_filt;//snorkAcc*acc_filt + snork2*gyro_filt;
+    //return acc_filt;//snorkAcc*acc_filt + snork2*gyro_filt;
+    return snorkAcc*acc_filt + snork2*gyro_filt;
 }
 
 //Gyro calibration is done in the main calibration function. Added functionality for calculationf offsets for x and y direction as well
