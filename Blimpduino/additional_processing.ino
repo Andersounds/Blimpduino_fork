@@ -45,11 +45,8 @@ int MPU6050_Acc_Pitch_Roll_Angle(float* pitchRoll)
   pitchRoll[1] = atan(num_R/den_R); //Roll angle
   
   return 1;
-  //float accel_roll_angle = atan2f((float)accel_t_gyro.value.y_accel, (float)accel_t_gyro.value.z_accel)
-  // LP of acc
-  // Integrate + HP of gyro
-  // Fusing?
 }
+
 
 
 int MPU6050_Gyro_Pitch_Roll_Rate(float* pitchRollRate){
@@ -65,5 +62,23 @@ int MPU6050_Gyro_Pitch_Roll_Rate(float* pitchRollRate){
   return 1;
 }
 
+float complFilter(float dt, float wc, float accValue, float gyroValue){
+    static float snorkAcc = 0.99;¨
+    static float snork2 = 1-snorkAcc;
+    static float acc_prev = accValue;
+    static float acc_filt_prev = accValue;
+    static float gyro_prev = gyroValue;
+    static float gyro_filt_prev = gyroValue;
+
+    float acc_filt = ( (accValue - acc_prev)*dt*wc + gyro_filt_prev*(2-dt*wc) ) / (2+dt*wc);
+    float gyro_filt = ( (gyroValue + gyro_prev)*dt + gyro_filt_prev*(2-dt*wc) ) / (2+dt*wc);
+
+    acc_prev = accValue;
+    acc_filt_prev = acc_filt;
+    gyro_prev = gyroValue;
+    gyro_filt_prev = gyro_filt;
+
+    return snorkAcc*acc_filt + snork2*gyro_filt;
+}
 
 //Gyro calibration is done in the main calibration function. Added functionality for calculationf offsets for x and y direction as well
