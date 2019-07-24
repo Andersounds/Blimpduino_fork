@@ -134,7 +134,8 @@ int mVertical_Value = 0;
 int16_t T1_imu[3] = {0,1,0}; //Row 1 of T matrix
 int16_t T2_imu[3] = {-1,0,0}; //Row 2 of T matrix
 int16_t T3_imu[3] = {0,0,1}; //Row 3 of T matrix
-
+float pitch_rpi = 0;//Filtered pitch and roll values to be sent to rpi
+float roll_rpi = 0;
 
 // INITIALIZATION
 void setup()
