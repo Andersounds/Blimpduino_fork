@@ -17,9 +17,16 @@ void Dameon_Loop(void) { //Background stuff.
     mpu_newDataReady = 1; //Little flag to know when new data is ready.
     MPU_dt = (timer_mpu - timer_mpu_old) * 0.000001; //Calculating the time elpased between the past and the present MPU reading and converting to seconds.
     MPU_yaw_angle = MPU6050_yawAngle(MPU_dt);
-    /*  BELOW HERE ARE CUSTOM FUNCTIONS FOR ROLL/PITCH CALCULATION*/
-
-
+    /*  BELOW HERE ARE CUSTOM FUNCTIONS FOR ROLL/PITCH CALCULATION /Fred*/
+    float acc_P_R[2] = {0,0};
+    float gyro_P_R[2] = {0,0};
+    MPU6050_Acc_Pitch_Roll_Angle(acc_P_R);
+    MPU6050_Gyro_Pitch_Roll_Rate(gyro_P_R);
+    //SerialUSB.print("DT: ");SerialUSB.print(dt);SerialUSB.print(", -MPU dt: ");SerialUSB.print(MPU_dt);SerialUSB.print(" rad\n");
+   // SerialUSB.print("-Pitch: ");SerialUSB.print(acc_P_R[0]);SerialUSB.print(", -Roll: ");SerialUSB.print(acc_P_R[1]);SerialUSB.print(" rad\n");
+    pitch_rpi = complFilterPitch(MPU_dt, acc_P_R[0], gyro_P_R[0]);
+    roll_rpi = complFilterRoll(MPU_dt, acc_P_R[1], gyro_P_R[1]);
+    //SerialUSB.print("Pitch: ");SerialUSB.print(pitch_rpiXX);SerialUSB.print(", Roll: ");SerialUSB.print(roll_rpiXX);SerialUSB.print(" rad\n");
     /*-----------------FINAL LINE OF CUSTOM CODE------------------*/
     timer_mpu_old = timer_mpu; //Timer reset so we can calculate the elapsed time between this reading and the one that will arrive in the future.
 

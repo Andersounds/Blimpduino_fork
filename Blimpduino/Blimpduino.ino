@@ -366,11 +366,8 @@ void loop()
 
     case 100:{ //No UDP data received.
         m_stopAll();//<----Add
-        float accPitchRoll[2];
-        float gyroPitchRoll[2];
 
-        MPU6050_Acc_Pitch_Roll_Angle(accPitchRoll);
-        MPU6050_Gyro_Pitch_Roll_Rate(gyroPitchRoll);
+        //pitch_rpicomplFilterPitch
 
     //  float pitchangl = MPU6050_pitchAngle();
     //  float rollangl = MPU6050_rollAngle();
@@ -379,8 +376,8 @@ void loop()
      //float pRate_ = MPU6050_pitchRate();
      //float rRate_ = MPU6050_rollRate();
 //SerialUSB.print("Pitch: ");SerialUSB.print(pitchangl);SerialUSB.print(", Roll: ");SerialUSB.print(rollangl);SerialUSB.print(" rad\n");
-SerialUSB.print("Pitch: ");SerialUSB.print(accPitchRoll[0]);SerialUSB.print(", Roll: ");SerialUSB.print(accPitchRoll[1]);SerialUSB.print(" rad\n");
-SerialUSB.print("Pitchrate: ");SerialUSB.print(gyroPitchRoll[0]);SerialUSB.print(", Rollrate: ");SerialUSB.print(gyroPitchRoll[1]);SerialUSB.print(" deg/s \n");
+SerialUSB.print("Pitch: ");SerialUSB.print(pitch_rpi);SerialUSB.print(", Roll: ");SerialUSB.print(roll_rpi);SerialUSB.print(" rad\n");
+//SerialUSB.print("Pitchrate: ");SerialUSB.print(gyroPitchRoll[0]);SerialUSB.print(", Rollrate: ");SerialUSB.print(gyroPitchRoll[1]);SerialUSB.print(" deg/s \n");
       delay(60);
       
  /*     

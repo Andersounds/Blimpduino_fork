@@ -62,15 +62,16 @@ int MPU6050_Gyro_Pitch_Roll_Rate(float* pitchRollRate){
   return 1;
 }
 
-float complFilter(float dt, float wc, float accValue, float gyroValue){
-    static float snorkAcc = 0.99;¨
+float complFilterPitch(float dt, float accValue, float gyroValue){
+    static float wc = 64.0;
+    static float snorkAcc = 0.99;
     static float snork2 = 1-snorkAcc;
-    static float acc_prev = accValue;
-    static float acc_filt_prev = accValue;
-    static float gyro_prev = gyroValue;
-    static float gyro_filt_prev = gyroValue;
+    static float acc_prev = 0;//accValue;
+    static float acc_filt_prev =0;// accValue;
+    static float gyro_prev = 0;//gyroValue;
+    static float gyro_filt_prev =0;// gyroValue;
 
-    float acc_filt = ( (accValue - acc_prev)*dt*wc + gyro_filt_prev*(2-dt*wc) ) / (2+dt*wc);
+    float acc_filt = ( (accValue + acc_prev)*dt*wc + acc_filt_prev*(2-dt*wc) ) / (2+dt*wc);
     float gyro_filt = ( (gyroValue + gyro_prev)*dt + gyro_filt_prev*(2-dt*wc) ) / (2+dt*wc);
 
     acc_prev = accValue;
@@ -78,7 +79,27 @@ float complFilter(float dt, float wc, float accValue, float gyroValue){
     gyro_prev = gyroValue;
     gyro_filt_prev = gyro_filt;
 
-    return snorkAcc*acc_filt + snork2*gyro_filt;
+    return gyro_filt;//snorkAcc*acc_filt + snork2*gyro_filt;
+}
+
+float complFilterRoll(float dt, float accValue, float gyroValue){
+    static float wc = 64.0;
+    static float snorkAcc = 0.99;
+    static float snork2 = 1-snorkAcc;
+    static float acc_prev =accValue;
+    static float acc_filt_prev = accValue;
+    static float gyro_prev = gyroValue;
+    static float gyro_filt_prev = gyroValue;
+
+    float acc_filt = ( (accValue + acc_prev)*dt*wc + acc_filt_prev*(2-dt*wc) ) / (2+dt*wc);
+    float gyro_filt = ( (gyroValue + gyro_prev)*dt + gyro_filt_prev*(2-dt*wc) ) / (2+dt*wc);
+
+    acc_prev = accValue;
+    acc_filt_prev = acc_filt;
+    gyro_prev = gyroValue;
+    gyro_filt_prev = gyro_filt;
+
+    return acc_filt;//snorkAcc*acc_filt + snork2*gyro_filt;
 }
 
 //Gyro calibration is done in the main calibration function. Added functionality for calculationf offsets for x and y direction as well
