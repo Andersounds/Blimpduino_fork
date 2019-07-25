@@ -366,6 +366,11 @@ void loop()
 
     case 100:{ //No UDP data received.
         m_stopAll();//<----Add
+        float height_rpi =(float)laser_height/1000; // [m]
+        float messageRPI[3] = {height_rpi,pitch_rpi,roll_rpi};
+        int stat = writeToRpi(messageRPI,3);
+
+        
 
         //pitch_rpicomplFilterPitch
 
@@ -376,9 +381,9 @@ void loop()
      //float pRate_ = MPU6050_pitchRate();
      //float rRate_ = MPU6050_rollRate();
 //SerialUSB.print("Pitch: ");SerialUSB.print(pitchangl);SerialUSB.print(", Roll: ");SerialUSB.print(rollangl);SerialUSB.print(" rad\n");
-SerialUSB.print("Pitch: ");SerialUSB.print(pitch_rpi*RAD2GRAD);SerialUSB.print(", Roll: ");SerialUSB.print(roll_rpi*RAD2GRAD);SerialUSB.print(" deg\n");
+//SerialUSB.print("Pitch: ");SerialUSB.print(pitch_rpi*RAD2GRAD);SerialUSB.print(", Roll: ");SerialUSB.print(roll_rpi*RAD2GRAD);SerialUSB.print(" deg\n");
 //SerialUSB.print("Pitchrate: ");SerialUSB.print(gyroPitchRoll[0]);SerialUSB.print(", Rollrate: ");SerialUSB.print(gyroPitchRoll[1]);SerialUSB.print(" deg/s \n");
-      delay(60);
+//      delay(60);
       
  /*     
       // Start of custom code
