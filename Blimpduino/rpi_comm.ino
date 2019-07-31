@@ -122,7 +122,7 @@ int writeToRpi(float* msg, int sizeOf){//does not have to be float!
         uint16_t unsignedScaleValue = (uint16_t)abs( (int)(msg[i]*scales_i2c[rpi_encode_scale]) );//Scale, remove sign, and cast the float
         uint8_t HB = (uint8_t)(unsignedScaleValue>>6)&0xFE;
         uint8_t LB = (uint8_t)(unsignedScaleValue<<1)&0xFE;
-        signByte|=(uint8_t)((msg[i]<0)<<i);//Set sign bit in sign byte
+        signByte|=(uint8_t)((msg[i]<0)<<i+1);//Set sign bit in sign byte (+1 because of info ID bit at bit 0)
         txbuffer[bufferIndex] = HB;
         txbuffer[bufferIndex+1] = LB;
         bufferIndex+=2;
