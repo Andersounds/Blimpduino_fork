@@ -1,6 +1,12 @@
 // File for definition of additional processing functions
 // -Fusing of pressure sensor + range sensor +  filtering for height estimation
 // -Controller
+/*
+TODO
+  -Filter of height measurement
+
+*/
+
 /* Global MPU6050 variables are located in the accel_t_gyro_union-struct (defined on row 433 in MPU6050)
  *  It is instantiated on line 466 to the object accel_t_gyro. We acces the relevant values by:
         int16_t   accel_t_gyro.value.x_accel
@@ -84,7 +90,7 @@ float complFilterPitch(float dt, float accValue, float gyroValue){
 }
 
 float complFilterRoll(float dt, float accValue, float gyroValue){
-    static float wc = 64.0;
+    static float wc = 256;//wc = 64.0;
     static float snorkAcc = 0.99;
     static float snork2 = 1-snorkAcc;
     static float acc_prev =accValue;
