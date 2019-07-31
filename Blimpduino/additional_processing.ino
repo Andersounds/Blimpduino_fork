@@ -90,7 +90,7 @@ float complFilterPitch(float dt, float accValue, float gyroValue){
 }
 
 float complFilterRoll(float dt, float accValue, float gyroValue){
-    static float wc = 256;//wc = 64.0;
+    static float wc = 64.0;
     static float snorkAcc = 0.5;
     static float snork2 = 1-snorkAcc;
     static float acc_prev =accValue;
