@@ -84,11 +84,12 @@ void USB_Print_Loop(int refreshRate) {
     char aux2[100];
     //sprintf(auxS, "$tA,%+04d", height/10);
 
-    sprintf(auxS, "B:%02d A:%+04d T:%+04d H:%04d", int(BatteryValue), int(MPU_yaw_angle), int(target_angle), int(laser_height));
+//FRED REMOVED THIS TO CLEAN SERIAL UP
+    /*sprintf(auxS, "B:%02d A:%+04d T:%+04d H:%04d", int(BatteryValue), int(MPU_yaw_angle), int(target_angle), int(laser_height));
     Serial1.println(auxS);
     sprintf(aux2, "Batt:%02d Yaw:%+04d SetP:%+04d LIDAR:%04d M0:%+04d M1:%+04d M2:%+04d CH5:%02d Mode:%02d", int(BatteryValue), int(MPU_yaw_angle), int(target_angle), int(height), int(mRight_Value), int(mLeft_Value), int(mVertical_Value), int(iCH5), int(modeSelector));
     SerialUSB.write(aux2);
-    SerialUSB.println(" ");
+    SerialUSB.println(" ");*/
 
     timer_termPrint = millis(); //Reseting timer
   }
