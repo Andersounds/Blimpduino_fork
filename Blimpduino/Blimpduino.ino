@@ -131,8 +131,8 @@ int mLeft_Value = 0;
 int mVertical_Value = 0;
 
 // Global variable used by roll/pitch sensing. T matrix is rotation matrix from UAV to IMU
-int16_t T1_imu[3] = {1,0,0};//{0,-1,0}; //Row 1 of T matrix
-int16_t T2_imu[3] = {0,1,0};//{1,0,0}; //Row 2 of T matrix
+int16_t T1_imu[3] = {0,1,0};//{0,-1,0}; //Row 1 of T matrix  NOTE THE FLIP OF COL 2. y axis is flipped to make directions correct Do test if unsure
+int16_t T2_imu[3] = {1,0,0};//{1,0,0}; //Row 2 of T matrix
 int16_t T3_imu[3] = {0,0,1};//{0,0,1}; //Row 3 of T matrix
 float pitch_rpi = 0;//Filtered pitch and roll values to be sent to rpi
 float roll_rpi = 0;
@@ -373,9 +373,14 @@ void loop()
         int stat = writeToRpi(messageRPI,3);
 
         if(count_print > 60){
-            SerialUSB.print("Pitch: ");SerialUSB.print(pitch_rpi*RAD2GRAD);
-            SerialUSB.print(", Roll: ");SerialUSB.print(roll_rpi*RAD2GRAD);
-            SerialUSB.print(" deg, Dist: ");SerialUSB.print(height_rpi);SerialUSB.print(" m \n");
+            //These three rows are for serial monitor
+            SerialUSB.print(pitch_rpi*RAD2GRAD);
+            SerialUSB.print("\t");
+            SerialUSB.println(roll_rpi*RAD2GRAD);
+            //Below is for print to serial monitor
+            //SerialUSB.print("Pitch: ");SerialUSB.print(pitch_rpi*RAD2GRAD);
+            //SerialUSB.print(", Roll: ");SerialUSB.print(roll_rpi*RAD2GRAD);
+            //SerialUSB.print(" deg, Dist: ");SerialUSB.print(height_rpi);SerialUSB.print(" m \n");
         count_print = 0;
         }
 
