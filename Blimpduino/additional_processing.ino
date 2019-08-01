@@ -49,6 +49,8 @@ int MPU6050_Acc_Pitch_Roll_Angle(float* pitchRoll)
   float den_R = (float)Gpz;
   pitchRoll[0] = atan(num_P/den_P); //Pitch angle
   pitchRoll[1] = atan(num_R/den_R); //Roll angle
+  //pitchRoll[0] = atan2(num_P,den_P); //Pitch angle
+  //pitchRoll[1] = atan2(num_R,den_R); //Roll angle
   
   return 1;
 }
@@ -56,7 +58,8 @@ int MPU6050_Acc_Pitch_Roll_Angle(float* pitchRoll)
 
 
 int MPU6050_Gyro_Pitch_Roll_Rate(float* pitchRollRate){
-  static float gyroToRadsPSec = RAD2GRAD*500.0/32767.0;//500 is one sided range as set in initialization. 32767 is bit range.
+  //static float gyroToRadsPSec = RAD2GRAD*500.0/32767.0;//500 is one sided range as set in initialization. 32767 is bit range.
+  static float gyroToRadsPSec = GRAD2RAD*500.0/32767.0;//500 is one sided range as set in initialization. 32767 is bit range.
   // Calculate sensor values in UAV frame from IMU frame via T matrix (Defined as global)
   int16_t Grx = ((accel_t_gyro.value.x_gyro-x_gyro_offset)*T1_imu[0] + (accel_t_gyro.value.y_gyro-y_gyro_offset)*T1_imu[1] + (accel_t_gyro.value.z_gyro-z_gyro_offset)*T1_imu[2]);
   int16_t Gry = ((accel_t_gyro.value.x_gyro-x_gyro_offset)*T2_imu[0] + (accel_t_gyro.value.y_gyro-y_gyro_offset)*T2_imu[1] + (accel_t_gyro.value.z_gyro-z_gyro_offset)*T2_imu[2]);
@@ -68,46 +71,52 @@ int MPU6050_Gyro_Pitch_Roll_Rate(float* pitchRollRate){
   return 1;
 }
 
-float complFilterPitch(float dt, float accValue, float gyroValue){
+float complFilterPitch(float dt, float acc_angle, float gyro_rate){
+    //Init cutoff frequency and some static variables
     static float wc = 64.0;
-    static float snorkAcc = 0.99;
-    static float snork2 = 1-snorkAcc;
-    static float acc_prev = 0;//accValue;
-    static float acc_filt_prev =0;// accValue;
-    static float gyro_prev = 0;//gyroValue;
-    static float gyro_filt_prev =0;// gyroValue;
-
-    float acc_filt = ( (accValue + acc_prev)*dt*wc + acc_filt_prev*(2-dt*wc) ) / (2+dt*wc);
-    float gyro_filt = ( (gyroValue + gyro_prev)*dt + gyro_filt_prev*(2-dt*wc) ) / (2+dt*wc);
-
-    acc_prev = accValue;
-    acc_filt_prev = acc_filt;
-    gyro_prev = gyroValue;
-    gyro_filt_prev = gyro_filt;
-
-    //return gyro_filt;//snorkAcc*acc_filt + snork2*gyro_filt;
-    return snorkAcc*acc_filt + snork2*gyro_filt;
+    static float acc_angle_prev = 0;                  // Angle from accelerometer (previous);
+    static float acc_angle_filt_prev = 0;             // Filtered angle from accelerometer (previous);
+    static float gyro_rate_prev = 0;                  // Angle RATE from gyro (previous)
+    static float gyro_angle_prev = 0;                 // Angle from gyro (integrated) (previous)
+    static float gyro_angle_filt_prev = 0;            // Filtered angle from gyro (previous)  
+    // LP filt of accelerometer angle (1st order LP discretized using tustin)
+    float acc_angle_filt = ( (acc_angle + acc_angle_prev)*dt*wc + acc_angle_filt_prev*(2-dt*wc) ) / (2+dt*wc);
+    //Integrate gyro rate to angle using tustin estimation
+    float gyro_angle = gyro_angle_prev + (gyro_rate+gyro_rate_prev)*dt/2;
+    // HP filt of integrated gyro angle (1st order HP dicretized using tustin)
+    float gyro_angle_filt = ( (gyro_angle - gyro_angle_prev)*2 + gyro_angle_filt_prev*(2 - dt*wc) )/(2 + dt*wc);
+    // Time shift static variables
+    acc_angle_prev = acc_angle;
+    acc_angle_filt_prev = acc_angle_filt;
+    gyro_rate_prev = gyro_rate;
+    gyro_angle_prev = gyro_angle;
+    gyro_angle_filt_prev = gyro_angle_filt;
+    // Combine filtered estimations
+    return gyro_angle_filt + acc_angle_filt;
 }
 
-float complFilterRoll(float dt, float accValue, float gyroValue){
-    static float wc = 64.0;
-    static float snorkAcc = 0.5;
-    static float snork2 = 1-snorkAcc;
-    static float acc_prev =accValue;
-    static float acc_filt_prev = accValue;
-    static float gyro_prev = gyroValue;
-    static float gyro_filt_prev = gyroValue;
-
-    float acc_filt = ( (accValue + acc_prev)*dt*wc + acc_filt_prev*(2-dt*wc) ) / (2+dt*wc);
-    float gyro_filt = ( (gyroValue + gyro_prev)*dt + gyro_filt_prev*(2-dt*wc) ) / (2+dt*wc);
-
-    acc_prev = accValue;
-    acc_filt_prev = acc_filt;
-    gyro_prev = gyroValue;
-    gyro_filt_prev = gyro_filt;
-
-    //return acc_filt;//snorkAcc*acc_filt + snork2*gyro_filt;
-    return snorkAcc*acc_filt + snork2*gyro_filt;
+float complFilterRoll(float dt, float acc_angle, float gyro_rate){
+    //Init cutoff frequency and some static variables
+    static float wc = 1.0;
+    static float acc_angle_prev = 0;                  // Angle from accelerometer (previous);
+    static float acc_angle_filt_prev = 0;             // Filtered angle from accelerometer (previous);
+    static float gyro_rate_prev = 0;                  // Angle RATE from gyro (previous)
+    static float gyro_angle_prev = 0;                 // Angle from gyro (integrated) (previous)
+    static float gyro_angle_filt_prev = 0;            // Filtered angle from gyro (previous)  
+    // LP filt of accelerometer angle (1st order LP discretized using tustin)
+    float acc_angle_filt = ( (acc_angle + acc_angle_prev)*dt*wc + acc_angle_filt_prev*(2-dt*wc) ) / (2+dt*wc);
+    //Integrate gyro rate to angle using tustin estimation
+    float gyro_angle = gyro_angle_prev + (gyro_rate+gyro_rate_prev)*dt/2;
+    // HP filt of integrated gyro angle (1st order HP dicretized using tustin)
+    float gyro_angle_filt = ( (gyro_angle - gyro_angle_prev)*2 + gyro_angle_filt_prev*(2 - dt*wc) )/(2 + dt*wc);
+    // Time shift static variables
+    acc_angle_prev = acc_angle;
+    acc_angle_filt_prev = acc_angle_filt;
+    gyro_rate_prev = gyro_rate;
+    gyro_angle_prev = gyro_angle;
+    gyro_angle_filt_prev = gyro_angle_filt;
+    // Combine filtered estimations
+    return gyro_angle_filt + acc_angle_filt;
 }
 
 //Gyro calibration is done in the main calibration function. Added functionality for calculationf offsets for x and y direction as well
