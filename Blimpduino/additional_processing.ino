@@ -97,7 +97,7 @@ float complFilterPitch(float dt, float acc_angle, float gyro_rate){
 
 float complFilterRoll(float dt, float acc_angle, float gyro_rate){
     //Init cutoff frequency and some static variables
-    static float wc = 1.0;
+    static float wc = 64.0;
     static float acc_angle_prev = 0;                  // Angle from accelerometer (previous);
     static float acc_angle_filt_prev = 0;             // Filtered angle from accelerometer (previous);
     static float gyro_rate_prev = 0;                  // Angle RATE from gyro (previous)
