@@ -26,7 +26,6 @@ void Dameon_Loop(void) { //Background stuff.
    // SerialUSB.print("-Pitch: ");SerialUSB.print(acc_P_R[0]);SerialUSB.print(", -Roll: ");SerialUSB.print(acc_P_R[1]);SerialUSB.print(" rad\n");
     pitch_rpi = complFilterPitch(MPU_dt, acc_P_R[0], gyro_P_R[0]);
     roll_rpi = complFilterRoll(MPU_dt, acc_P_R[1], gyro_P_R[1]);
-    //SerialUSB.print("Pitch: ");SerialUSB.print(pitch_rpiXX);SerialUSB.print(", Roll: ");SerialUSB.print(roll_rpiXX);SerialUSB.print(" rad\n");
     /*-----------------FINAL LINE OF CUSTOM CODE------------------*/
     timer_mpu_old = timer_mpu; //Timer reset so we can calculate the elapsed time between this reading and the one that will arrive in the future.
 
@@ -42,6 +41,31 @@ void Dameon_Loop(void) { //Background stuff.
 
     height_dt = (timer_laser - timer_laser_old) * 0.000001; //calculating the time between readings.
     timer_laser_old = timer_laser; //storing the old time to calculate the time between readings later on.
+
+    /* BELOW HERE IS FUNCTION TO CALCULATE DELTA_HEIGHT /Fred */
+
+    
+    int lasr_h = laser_height;//*cos(roll_rpi)*cos(pitch_rpi);
+    static int lasr_h_prev = lasr_h;
+    int dh = (lasr_h - lasr_h_prev)/height_dt;
+    lasr_h_prev = lasr_h;
+   
+    //float d_height = delta_height(height_dt, laser_height,roll_rpi, pitch_rpi);
+    float constrained_dh = delta_height_2(height_dt, laser_height,roll_rpi, pitch_rpi);
+    
+    //Add delta_height to current height estimation
+    rpi_height +=constrained_dh;
+    r_p_h_prev += constrained_dh;
+
+    
+   SerialUSB.print(height);
+
+   SerialUSB.print("\t");
+   SerialUSB.println(rpi_height);
+//    SerialUSB.println(constrained_dh);//primprim
+
+
+   
   }
   /**************************************************/
   if (newMessage == 1) //Checking new UDP data from APP.
