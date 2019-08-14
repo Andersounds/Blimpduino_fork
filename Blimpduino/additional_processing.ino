@@ -118,5 +118,71 @@ float complFilterRoll(float dt, float acc_angle, float gyro_rate){
     // Combine filtered estimations
     return gyro_angle_filt + acc_angle_filt;
 }
+//Filter of height sensor value. 
+// 1. Use roll and pitch to get vertical distance to horizontal plane (To prevent vertical oscillations due to tilting oscillation)
+// 2. Differentiate to get vertical velocity
+// 3. Low pass filter to remove any spikes due to for exapmple flying over a table as well as noise
+// 4. Integrate to get delta-height
+// 5. Add to previous height
+// Previous height is either the previous estimation or a new value from azipe.
+// The filtering is only done on delta-height, so should not be affected by changing the offset.
+float delta_height(float dt, float dist,float roll, float pitch){
+    static float wc = 10;//Cutoff frequency of LP filter
+    static float height_prev = 0;
+    static float height_prim_prev = 0;
+    static float height_prim_filt_prev = 0; //Should this have another start value? maybe start out as height_prim_filt?
+    float height = dist*cos(roll)*cos(pitch); //Calculate vertical height
+    float height_prim = (height-height_prev)/dt;    //Differentiate to get vertical velocity
+    if(abs(height_prim) > 1000){
+      height_prim = height_prim_prev;
+    }
+    // LP filt of vertical velocity (1st order LP discretized using tustin)
+    float height_prim_filt = ( (height_prim + height_prim_prev)*dt*wc + height_prim_filt_prev*(2-dt*wc) ) / (2+dt*wc);
+    // Integrate using tustin estimation
+    float delta_height_filt = (height_prim_filt + height_prim_filt_prev)*dt/2;
+    //Shift values
+    height_prev = height;
+    height_prim_prev = height_prim;
+    height_prim_filt_prev = height_prim_filt;
+    //return delta_height_filt;
+    return height_prim_filt;
+   
 
+ }
+
+//Differentiate twice
+//Constrain vertical acceleration
+//integrate
+//LP
+//Integrate
+float delta_height_2(float dt, float dist,float roll, float pitch){
+    static float wc1 = 10;//Cutoff frequency of LP filter
+    static float wc2 = 50;//Cutoff frequency of LP filter
+    static float height_prev = 0;
+    static float height_filt_prev = 0;
+    static float height_filt_prim_prev = 0;
+    static float height_filt_prim_filt_prev = 0;
+    float height = dist*cos(roll)*cos(pitch); //Calculate vertical height
+    //Filter height data
+    float height_filt = ( (height + height_prev)*dt*wc1 + height_filt_prev*(2-dt*wc1) ) / (2+dt*wc1);
+    //Differentiate filtered height
+    float height_filt_prim = (height_filt-height_filt_prev)/dt;
+    //Filter velocity data
+    float height_filt_prim_filt = ( (height_filt_prim + height_filt_prim_prev)*dt*wc2 + height_filt_prim_filt_prev*(2-dt*wc2) ) / (2+dt*wc2);
+    // limit second derivative
+    float primprim = (abs(height_filt_prim_filt - height_filt_prim_filt_prev)/dt);
+    if( primprim> 2000 ){
+        height_filt_prim_filt = 0;//height_filt_prim_filt_prev*0.1;
+    }
+    float delta_height_filt = (height_filt_prim_filt + height_filt_prim_filt_prev)*dt/2;
+
+    height_prev = height;
+    height_filt_prev = height_filt;
+    height_filt_prim_prev = height_filt_prim;
+    height_filt_prim_filt_prev = height_filt_prim_filt;
+
+    return delta_height_filt;
+   // return primprim;
+
+}
 //Gyro calibration is done in the main calibration function. Added functionality for calculationf offsets for x and y direction as well
