@@ -374,32 +374,24 @@ void loop()
         float lidar_dist_m =(float)height/1000.0; // [m]
         float rpi_height_m = ((float)rpi_height )/1000.0;
         // height: distance measurement from lidar [mm] (filtered)
-        // lidar_dist : distance measurement from lidar [mm] (filtered and scaled)
+        // lidar_dist_m : distance measurement from lidar [m] (filtered and scaled)
         // rpi_height: height estimation. (normalizes away tilt from lidar dist and filters value)
         float messageRPI[4] = {lidar_dist_m,rpi_height_m,pitch_rpi,roll_rpi};
-        //int stat = writeToRpi(messageRPI,3);
-        /*if(count_print > 3000){
-            rpi_height = height;
-            count_print = 0;
-            //These three rows are for serial monitor
-            //SerialUSB.print(pitch_rpi*RAD2GRAD);
-            //SerialUSB.print("\t");
-            //SerialUSB.print(roll_rpi*RAD2GRAD);
-            //SerialUSB.print("\t");
-        }*/
-      static float cntr = 0;
-      //float messageRPI[4] = {cntr,cntr+1,cntr+2,cntr+3};
-      int stat = writeToRpi(messageRPI,4);
-      switch(stat){
-        case 0:{SerialUSB.println("Success wrote to pi!");break;}
-        case 1:{SerialUSB.println("Data too long for tx buffer");break;}
-        case 2:{SerialUSB.println("Recieved NACK on transmit of address");break;}
-        case 3:{SerialUSB.println("Recieved NACK on transmit of data");break;}
-        case 4:{SerialUSB.println("Some error in i2c transmit");break;}
-        }
-      //cntr+=4;
-
+        int stat = writeToRpi(messageRPI,4);
+        if(count_print > 1000){
+         
+            switch(stat){
+                case 0:{SerialUSB.println("Success wrote to pi!");break;}
+                case 1:{SerialUSB.println("Data too long for tx buffer");break;}
+                case 2:{SerialUSB.println("Recieved NACK on transmit of address");break;}
+                case 3:{SerialUSB.println("Recieved NACK on transmit of data");break;}
+                case 4:{SerialUSB.println("Some error in i2c transmit");break;}
+            }   
+            SerialUSB.print(roll_rpi*RAD2GRAD);
+            SerialUSB.print("\t");
+            SerialUSB.println(pitch_rpi*RAD2GRAD);
       //delay(1000);
+      }
       break;
     }
 
