@@ -58,14 +58,15 @@ void Dameon_Loop(void) { //Background stuff.
     r_p_h_prev += constrained_dh;
 
     
-   SerialUSB.print(height);
-
+   //SerialUSB.print(height);
+   //SerialUSB.print("\t");
+   //SerialUSB.println(rpi_height);
+  
+/*   
+   SerialUSB.print(pitch_rpi*RAD2GRAD);
    SerialUSB.print("\t");
-   SerialUSB.println(rpi_height);
-//    SerialUSB.println(constrained_dh);//primprim
-
-
-   
+   SerialUSB.println(roll_rpi*RAD2GRAD);
+*/ 
   }
   /**************************************************/
   if (newMessage == 1) //Checking new UDP data from APP.

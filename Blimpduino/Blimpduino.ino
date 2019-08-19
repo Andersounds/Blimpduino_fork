@@ -371,47 +371,25 @@ void loop()
         static int count_print = 0;
         count_print ++;
         m_stopAll();//<----Add
-        float height_rpi =(float)laser_height/1000; // [m]
-        float messageRPI[3] = {height_rpi,pitch_rpi,roll_rpi};
-        int stat = writeToRpi(messageRPI,3);
-
-        if(count_print > 3000){
+        float lidar_dist_m =(float)height/1000.0; // [m]
+        float rpi_height_m = ((float)rpi_height )/1000.0;
+        // height: distance measurement from lidar [mm] (filtered)
+        // lidar_dist : distance measurement from lidar [mm] (filtered and scaled)
+        // rpi_height: height estimation. (normalizes away tilt from lidar dist and filters value)
+        float messageRPI[4] = {lidar_dist_m,rpi_height_m,pitch_rpi,roll_rpi};
+        //int stat = writeToRpi(messageRPI,3);
+        /*if(count_print > 3000){
             rpi_height = height;
-            
+            count_print = 0;
             //These three rows are for serial monitor
             //SerialUSB.print(pitch_rpi*RAD2GRAD);
             //SerialUSB.print("\t");
             //SerialUSB.print(roll_rpi*RAD2GRAD);
             //SerialUSB.print("\t");
-    
-      
-//            SerialUSB.print(laser_height);
- //           SerialUSB.print("\t");
-  //          SerialUSB.println(rpi_height);
-            //Below is for print to serial monitor
-            //SerialUSB.print("Pitch: ");SerialUSB.print(pitch_rpi*RAD2GRAD);
-            //SerialUSB.print(", Roll: ");SerialUSB.print(roll_rpi*RAD2GRAD);
-            //SerialUSB.print(" deg, Dist: ");SerialUSB.print(height_rpi);SerialUSB.print(" m \n");
-        count_print = 0;
-        }
-
-        //pitch_rpicomplFilterPitch
-
-    //  float pitchangl = MPU6050_pitchAngle();
-    //  float rollangl = MPU6050_rollAngle();
-     // printAccel();
-
-     //float pRate_ = MPU6050_pitchRate();
-     //float rRate_ = MPU6050_rollRate();
-//SerialUSB.print("Pitch: ");SerialUSB.print(pitchangl);SerialUSB.print(", Roll: ");SerialUSB.print(rollangl);SerialUSB.print(" rad\n");
-//SerialUSB.print("Pitch: ");SerialUSB.print(pitch_rpi*RAD2GRAD);SerialUSB.print(", Roll: ");SerialUSB.print(roll_rpi*RAD2GRAD);SerialUSB.print(" deg\n");
-//SerialUSB.print("Pitchrate: ");SerialUSB.print(gyroPitchRoll[0]);SerialUSB.print(", Rollrate: ");SerialUSB.print(gyroPitchRoll[1]);SerialUSB.print(" deg/s \n");
-//      delay(60);
-      
- /*     
-      // Start of custom code
-      float messageRPI[3] = {1,2,(float)laser_height/1000};
-      int stat = writeToRpi(messageRPI,3);
+        }*/
+      static float cntr = 0;
+      //float messageRPI[4] = {cntr,cntr+1,cntr+2,cntr+3};
+      int stat = writeToRpi(messageRPI,4);
       switch(stat){
         case 0:{SerialUSB.println("Success wrote to pi!");break;}
         case 1:{SerialUSB.println("Data too long for tx buffer");break;}
@@ -419,31 +397,9 @@ void loop()
         case 3:{SerialUSB.println("Recieved NACK on transmit of data");break;}
         case 4:{SerialUSB.println("Some error in i2c transmit");break;}
         }
+      //cntr+=4;
 
-      delay(2000);
-
-
-
-      //Clear wire.
-      while(Wire.available()){
-        Wire.read();
-      }
-      float recv_values[3];
-      int recieved_floats = readFromRpi(recv_values);
-      switch(recieved_floats){
-          case -3:{SerialUSB.println("No ID byte.");break;}
-          case -2:{SerialUSB.println("Complete message did not fit in rx buffer. discarding");break;}
-          case 0:{ SerialUSB.println("No bytes recieved from rpi. moving on...");break;}        
-          default:{SerialUSB.print("Recieved ");SerialUSB.print(recieved_floats);SerialUSB.print(" floats.\n");
-              for(int i=0;i< recieved_floats;i++){
-                  SerialUSB.print(recv_values[i]);SerialUSB.print(", ");
-              }
-              SerialUSB.print("\n");
-          }  
-      }
-      delay(2000);
-*/
-      //End of custom code
+      //delay(1000);
       break;
     }
 
