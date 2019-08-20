@@ -390,6 +390,7 @@ void loop()
             SerialUSB.print(roll_rpi*RAD2GRAD);
             SerialUSB.print("\t");
             SerialUSB.println(pitch_rpi*RAD2GRAD);
+            count_print = 0;
       //delay(1000);
       }
       break;
