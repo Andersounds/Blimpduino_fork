@@ -294,7 +294,6 @@ void loop()
     ly controlled by you -via the App- and external inputs -if any-.
     This will output a positive value from 0 to x, this value
     controls "System Mode" section*/
-
   /*------->Mode Selector Begins<-------*/
   modeSelector = 0;
 
@@ -376,8 +375,8 @@ void loop()
         // height: distance measurement from lidar [mm] (filtered)
         // lidar_dist_m : distance measurement from lidar [m] (filtered and scaled)
         // rpi_height: height estimation. (normalizes away tilt from lidar dist and filters value)
-        float messageRPI[4] = {lidar_dist_m,rpi_height_m,pitch_rpi,roll_rpi};
-        int stat = writeToRpi(messageRPI,4);
+        float messageRPI[5] = {pitch_rpi,roll_rpi,lidar_dist_m,rpi_height_m,(float)BatteryValue};
+        int stat = writeToRpi(messageRPI,5);
         if(count_print > 1000){
          
             switch(stat){
