@@ -24,7 +24,7 @@ Wire.requestFrom(address,quantity);   This is used by master to request data fro
 byte RPI_I2C_ADDRESS = 0x04;
 //Encode, decode scales
 float scales_i2c[4] = {1,10,100,1000};
-uint8_t rpi_encode_scale = 2; //The scale used when encoding floats that are sent to rpi
+uint8_t rpi_encode_scale = 3; //The scale used when encoding floats that are sent to rpi
 
 
 
