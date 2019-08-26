@@ -136,9 +136,9 @@ int send_msg_rpi_00(int refreshRate){
                 case 3:{SerialUSB.println("Recieved NACK on transmit of data");break;}
                 case 4:{SerialUSB.println("Some error in i2c transmit");break;}
             }   
-            //SerialUSB.print(roll_rpi*RAD2GRAD);
-            //SerialUSB.print("\t");
-            //SerialUSB.println(pitch_rpi*RAD2GRAD);
+            SerialUSB.print(roll_rpi*RAD2GRAD);
+            SerialUSB.print("\t");
+            SerialUSB.println(pitch_rpi*RAD2GRAD);
             count_print = 0;
         }
     }
