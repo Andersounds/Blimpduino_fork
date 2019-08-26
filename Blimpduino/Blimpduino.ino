@@ -130,10 +130,12 @@ int mRight_Value = 0;
 int mLeft_Value = 0;
 int mVertical_Value = 0;
 
-// Global variable used by roll/pitch sensing. T matrix is rotation matrix from UAV to IMU /Fred
-int16_t T1_imu[3] = {0,1,0};//{0,-1,0}; //Row 1 of T matrix  NOTE THE FLIP OF COL 2. y axis is flipped to make directions correct Do test if unsure
-int16_t T2_imu[3] = {1,0,0};//{1,0,0}; //Row 2 of T matrix
-int16_t T3_imu[3] = {0,0,1};//{0,0,1}; //Row 3 of T matrix
+// Global variable used by roll/pitch sensing.
+// T matrix transforms UAV coordinate to IMU Frame. T_inv thus transforms IMU coordinate to UAV Frame
+// Due to a flip of z axis I think, the 
+int16_t T1_imu_inv[3] = {0,-1,0};//{0,-1,0}; //Row 1 of T matrix 
+int16_t T2_imu_inv[3] = {1,0,0};//{1,0,0}; //Row 2 of T matrix
+int16_t T3_imu_inv[3] = {0,0,1};//{0,0,1}; //Row 3 of T matrix
 float pitch_rpi = 0;//Filtered pitch and roll values to be sent to rpi
 float roll_rpi = 0;
 //Global variable of the height /Fred
@@ -288,6 +290,9 @@ void loop()
   USB_Print_Loop(500); //Send telemetry every 500ms....
 
   send_msg_rpi_00(1); //Send i2c message 00 to rpi every millisecond... //FRED
+  //printGyro();
+  //printAccel();
+  //printUAVRollPitch();
   /**************************************************/
 
   /*Mode selector is better known as System State Selector.
