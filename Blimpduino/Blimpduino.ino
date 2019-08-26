@@ -287,6 +287,7 @@ void loop()
 
   USB_Print_Loop(500); //Send telemetry every 500ms....
 
+  send_msg_rpi_00(1); //Send i2c message 00 to rpi every millisecond... //FRED
   /**************************************************/
 
   /*Mode selector is better known as System State Selector.
@@ -367,31 +368,7 @@ void loop()
       break;
 
     case 100:{ //No UDP data received.
-        static int count_print = 0;
-        count_print ++;
         m_stopAll();//<----Add
-        float lidar_dist_m =(float)height/1000.0; // [m]
-        float rpi_height_m = ((float)rpi_height )/1000.0;
-        // height: distance measurement from lidar [mm] (filtered)
-        // lidar_dist_m : distance measurement from lidar [m] (filtered and scaled)
-        // rpi_height: height estimation. (normalizes away tilt from lidar dist and filters value)
-        float messageRPI[5] = {pitch_rpi,roll_rpi,lidar_dist_m,rpi_height_m,(float)BatteryValue};
-        int stat = writeToRpi(messageRPI,5);
-        if(count_print > 1000){
-         
-            switch(stat){
-                case 0:{SerialUSB.println("Success wrote to pi!");break;}
-                case 1:{SerialUSB.println("Data too long for tx buffer");break;}
-                case 2:{SerialUSB.println("Recieved NACK on transmit of address");break;}
-                case 3:{SerialUSB.println("Recieved NACK on transmit of data");break;}
-                case 4:{SerialUSB.println("Some error in i2c transmit");break;}
-            }   
-            SerialUSB.print(roll_rpi*RAD2GRAD);
-            SerialUSB.print("\t");
-            SerialUSB.println(pitch_rpi*RAD2GRAD);
-            count_print = 0;
-      //delay(1000);
-      }
       break;
     }
 

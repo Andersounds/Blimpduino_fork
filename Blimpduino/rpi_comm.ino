@@ -38,77 +38,8 @@ int writeOneByteToRpi(byte data){
     return status; 
 }
 
-
-/*
-int writeToRpi(char info,int16_t roll,int16_t pitch,int16_t height_s) { //dim(roll, pitch): [rad*100], dim(height):[cm]
-    // Bit shifting of signed integers have undefined behaviour.
-    // Send an additional byte called info where the sign of the variables are encoded, possibly together with additional info
-  
-    //the three lowest bits of the info byte encode the sign of the variables  if(x>0):1, if(x<0):0
-    //Mask to keep the upper 5 bits and set the lower 3 bits according to the sign of the values
-    uint8_t info =(info&0xF8);
-    uint8_t sign = (uint8_t)((roll>0)<<2 | (pitch>0)<<1 | (height>0));
-    //Construct a byte-array of length 7 with info and unsigned high byte, low byte of roll, pitch, height
-    char data[7] = {(char)info_sign,
-                    (char)(abs(roll)>>8), ((char)roll&0xFF),
-                    (char)(abs(pitch)>>8), ((char)pitch&0xFF),
-                    (char)(abs(height)>>8), ((char)height&0xFF)};
- 
-    uint8_t data_uint8 = 114;
-    uint8_t data_arr[3] = {114,56,200};
-    SerialUSB.print("Laser height: "); SerialUSB.print(height,BIN);SerialUSB.print('\n');
-//SerialUSB.print("HB: "); SerialUSB.print(data[4],BIN);SerialUSB.print('\n');
-//SerialUSB.print("LB: "); SerialUSB.print(data[5],BIN);SerialUSB.print('\n');
-    //  uint16_t hb = data[4]<<8;
-     // uint16_t lb = data[5];
-      //uint16_t rebuild = hb | lb;
-//SerialUSB.print("Rebuild: ");     SerialUSB.print(rebuild,BIN);  
-      //SerialUSB.println("\n");  
-    size_t dataLength = 6;//Hardcoded length
-    int status;
-    Wire.beginTransmission(RPI_I2C_ADDRESS);// Take control of bus and prepare to sent to rpi
-    for(int i=0;i<7;i++){
-        //status = Wire.write(data[i]);        // Write one byte to buffer
-        status = Wire.write(&data[i],1);//
-    }
-    //status = Wire.write(charArray);
-    //status = Wire.write(h);
-    //status = Wire.write(&data_uint8,1);//DEnna funkar
-    /*status = Wire.write(&data_arr[0],1);//Dessa också
-    status = Wire.write(&data_arr[1],1);//
-    status = Wire.write(&data_arr[2],1);//
-    
- 
-    status = Wire.endTransmission(true);             // Send the buffer content to rpi and release bus
-    return status; 
-}
-*/
-
-/*
-//Info byte
-07 06 05 04 03 02 01 00
--  -  A  A  A  S  S  ID
-//Sign byte
-07 06 05 04 03 02 01 00
-            S3 S2 S1 ID
-//Data bytes
-07 - 01              00
-<data>               ID
-//Legend
-ID:     bit identifying the info-byte. 1: info byte, 0: data or sign byte
-S:      bits encoding the scale of floats. 00: 1, 01:10, 10:100, 11:1000
-A:      bits encoding the message length. 1-7 bytes.
-SX:     Bit identifying the sign of float X. 1: neg, 0: pos
-
-Each float is encoded as 7 high bits and 7 low bits in that order.
-*/
-
-
-
-//int encodeData()
-
-//int decodeData()
-
+// Encodes an array of floats to a series of bytes and sends to rpi over i2c. 
+// TODO: Specify the message identifier so that different messages can be sent and decoded properly
 int writeToRpi(float* msg, int sizeOf){//does not have to be float!
     if(sizeOf>7){return -1;}//Too large value
     uint8_t txbuffer[16];
@@ -137,6 +68,8 @@ int writeToRpi(float* msg, int sizeOf){//does not have to be float!
 }
 
 
+// Reads i2c message from rpi and decodes it into a series of floats. Returns the number of successfully decoded floats
+// TODO: Read what message has been recieved from info byte and decode accordingly.
 int readFromRpi(float* msg){
     //float recieved_values[3];
     int bytes = Wire.requestFrom(RPI_I2C_ADDRESS, 16);//Request everything that the rpi has. If buffer is not full then last byte will repeat
@@ -180,3 +113,79 @@ int readFromRpi(float* msg){
 }
 
 
+// Ready function to send message stucture 00 (0) to rpi. Argument is the execution period in milliseconds
+int send_msg_rpi_00(int refreshRate){
+    static int count_print = 0;
+    static long timer = 0; //Setting timer
+    count_print ++;
+    int stat = 100; //Return status 100 if it is not yet time to send msg
+    if((millis() - timer) > refreshRate){
+        //Calculate dist and approcimated height, scaled to meters
+        float lidar_dist_m =(float)height/1000.0; // [m]
+        float rpi_height_m = ((float)rpi_height )/1000.0;
+        // height: distance measurement from lidar [mm] (filtered)
+        // lidar_dist_m : distance measurement from lidar [m] (filtered and scaled)
+        // rpi_height: height estimation. (normalizes away tilt from lidar dist and filters value)
+        float messageRPI[5] = {pitch_rpi,roll_rpi,lidar_dist_m,rpi_height_m,(float)BatteryValue};
+        int stat = writeToRpi(messageRPI,5);
+        if(count_print > 1000){  
+            switch(stat){
+                case 0:{SerialUSB.println("Success wrote to pi!");break;}
+                case 1:{SerialUSB.println("Data too long for tx buffer");break;}
+                case 2:{SerialUSB.println("Recieved NACK on transmit of address");break;}
+                case 3:{SerialUSB.println("Recieved NACK on transmit of data");break;}
+                case 4:{SerialUSB.println("Some error in i2c transmit");break;}
+            }   
+            //SerialUSB.print(roll_rpi*RAD2GRAD);
+            //SerialUSB.print("\t");
+            //SerialUSB.println(pitch_rpi*RAD2GRAD);
+            count_print = 0;
+        }
+    }
+    timer = millis();//Reset timer
+    return stat;
+}
+
+
+
+
+
+/*     ====================== MESSAGE DEFINITIONS =======================
+//Info byte
+07 06 05 04 03 02 01 00
+D  D  A  A  A  S  S  ID
+//Sign byte
+07 06 05 04 03 02 01 00
+S7 S6 S5 S4 S3 S2 S1 ID
+//Data bytes
+07 06 05 04 03 02 01 00
+        <data>       ID
+//Legend
+ID:     bit identifying the info-byte. 1: info byte, 0: data or sign byte
+S:      bits encoding the scale of floats. 00: 1, 01:10, 10:100, 11:1000
+A:      bits encoding the message length. 1-7 floats (7 floats = 14 unsigned bytes + sgn byte + info byte = 16 bytes.
+D:      bits identifying which message it is (0-3). Can specify before that 0: 3 floats in certain order, 1: 2 ints etc.
+SX:     Bit identifying the sign of float X. 1: neg, 0: pos
+
+Each float is encoded as 7 high bits and 7 low bits in that order.
+
+
+DD message number specification:
+bin     dec     description
+00       0
+                byte 0:  info byte
+                byte 1:  sign byte
+    byte 2:  pitch (rad) HB
+                byte 3:  pitch (rad) LB
+                byte 4:  roll (rad) HB
+                byte 5:  roll (rad) LB
+                byte 6:  lidar dist HB
+                byte 7:  lidar dist LB
+                byte 8:  height est HB
+                byte 9:  height est LB
+    byte 10: atsam batt HB
+                byte 11: atsam batt LB
+01       1
+10       2
+11       3
+*/
