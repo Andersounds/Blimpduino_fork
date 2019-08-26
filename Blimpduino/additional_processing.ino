@@ -25,11 +25,32 @@ We must know the sampling time. It must be constant right?
 
 */
 void printAccel(void){
-        SerialUSB.print("X: ");SerialUSB.print(accel_t_gyro.value.x_accel);SerialUSB.print("Y: ");SerialUSB.print(accel_t_gyro.value.y_accel);
-        SerialUSB.print("Z: ");SerialUSB.print(accel_t_gyro.value.z_accel);SerialUSB.print(" rad\n");
+  int16_t Gpx = (accel_t_gyro.value.x_accel*T1_imu_inv[0] + accel_t_gyro.value.y_accel*T1_imu_inv[1] + accel_t_gyro.value.z_accel*T1_imu_inv[2]);
+  int16_t Gpy = (accel_t_gyro.value.x_accel*T2_imu_inv[0] + accel_t_gyro.value.y_accel*T2_imu_inv[1] + accel_t_gyro.value.z_accel*T2_imu_inv[2]);
+  int16_t Gpz = (accel_t_gyro.value.x_accel*T3_imu_inv[0] + accel_t_gyro.value.y_accel*T3_imu_inv[1] + accel_t_gyro.value.z_accel*T3_imu_inv[2]);
+    SerialUSB.print(Gpx);
+    SerialUSB.print("\t");
+    SerialUSB.print(Gpy);
+    SerialUSB.print("\t");
+    SerialUSB.println(Gpz);
 }
+void printGyro(void){
 
-/* This function takes IMU acceleration values, transforms them from IMU to UAV frame according to the global T-matrix (T1_imu, T2_imu,T3_imu)
+  int16_t Gpx = (accel_t_gyro.value.x_gyro*T1_imu_inv[0] + accel_t_gyro.value.y_gyro*T1_imu_inv[1] + accel_t_gyro.value.z_gyro*T1_imu_inv[2]);
+  int16_t Gpy = (accel_t_gyro.value.x_gyro*T2_imu_inv[0] + accel_t_gyro.value.y_gyro*T2_imu_inv[1] + accel_t_gyro.value.z_gyro*T2_imu_inv[2]);
+  int16_t Gpz = (accel_t_gyro.value.x_gyro*T3_imu_inv[0] + accel_t_gyro.value.y_gyro*T3_imu_inv[1] + accel_t_gyro.value.z_gyro*T3_imu_inv[2]);
+    SerialUSB.print(Gpx);
+    SerialUSB.print("\t");
+    SerialUSB.print(Gpy);
+    SerialUSB.print("\t");
+    SerialUSB.println(Gpz);
+}
+void printUAVRollPitch(void){
+    SerialUSB.print(roll_rpi*RAD2GRAD);
+    SerialUSB.print("\t");
+    SerialUSB.println(pitch_rpi*RAD2GRAD);
+}
+/* This function takes IMU acceleration values, transforms them from IMU to UAV frame according to the global T-matrix (T1_imu_inv, T2_imu_inv,T3_imu_inv)
  * It then uses the acceleration values to calculate the pitch and roll angle of the UAV within the range +-pi/2. Angles may not superceed these limit
  *  NOTE must call  MPU6050_read_3axis(); outside to get as fresh as possible data
  */
@@ -39,15 +60,15 @@ int MPU6050_Acc_Pitch_Roll_Angle(float* pitchRoll)
   // https://wiki.dfrobot.com/How_to_Use_a_Three-Axis_Accelerometer_for_Tilt_Sensing
 
   // Calculate sensor values in UAV frame from IMU frame via T matrix (Defined as global)
-  int16_t Gpx = (accel_t_gyro.value.x_accel*T1_imu[0] + accel_t_gyro.value.y_accel*T1_imu[1] + accel_t_gyro.value.z_accel*T1_imu[2]);
-  int16_t Gpy = (accel_t_gyro.value.x_accel*T2_imu[0] + accel_t_gyro.value.y_accel*T2_imu[1] + accel_t_gyro.value.z_accel*T2_imu[2]);
-  int16_t Gpz = (accel_t_gyro.value.x_accel*T3_imu[0] + accel_t_gyro.value.y_accel*T3_imu[1] + accel_t_gyro.value.z_accel*T3_imu[2]);
+  int16_t Gpx = (accel_t_gyro.value.x_accel*T1_imu_inv[0] + accel_t_gyro.value.y_accel*T1_imu_inv[1] + accel_t_gyro.value.z_accel*T1_imu_inv[2]);
+  int16_t Gpy = (accel_t_gyro.value.x_accel*T2_imu_inv[0] + accel_t_gyro.value.y_accel*T2_imu_inv[1] + accel_t_gyro.value.z_accel*T2_imu_inv[2]);
+  int16_t Gpz = (accel_t_gyro.value.x_accel*T3_imu_inv[0] + accel_t_gyro.value.y_accel*T3_imu_inv[1] + accel_t_gyro.value.z_accel*T3_imu_inv[2]);
   
   float num_P = (float)-Gpx;
   float den_P = sqrt((float)(Gpy*Gpy + Gpz*Gpz));
   float num_R = (float)Gpy;
   float den_R = (float)Gpz;
-  pitchRoll[0] = atan(num_P/den_P); //Pitch angle
+  pitchRoll[0] = -atan(num_P/den_P); //Pitch angle /* ======= SIGN IS FLIPPED HERE DUE TO Z AXIS POINTING DOWN =======   */
   pitchRoll[1] = atan(num_R/den_R); //Roll angle
   //pitchRoll[0] = atan2(num_P,den_P); //Pitch angle
   //pitchRoll[1] = atan2(num_R,den_R); //Roll angle
@@ -55,15 +76,14 @@ int MPU6050_Acc_Pitch_Roll_Angle(float* pitchRoll)
   return 1;
 }
 
-
-
+// Takes the latest gyro measurements and translates them via T inv matrix to UAV frame
 int MPU6050_Gyro_Pitch_Roll_Rate(float* pitchRollRate){
   //static float gyroToRadsPSec = RAD2GRAD*500.0/32767.0;//500 is one sided range as set in initialization. 32767 is bit range.
   static float gyroToRadsPSec = GRAD2RAD*500.0/32767.0;//500 is one sided range as set in initialization. 32767 is bit range.
   // Calculate sensor values in UAV frame from IMU frame via T matrix (Defined as global)
-  int16_t Grx = ((accel_t_gyro.value.x_gyro-x_gyro_offset)*T1_imu[0] + (accel_t_gyro.value.y_gyro-y_gyro_offset)*T1_imu[1] + (accel_t_gyro.value.z_gyro-z_gyro_offset)*T1_imu[2]);
-  int16_t Gry = ((accel_t_gyro.value.x_gyro-x_gyro_offset)*T2_imu[0] + (accel_t_gyro.value.y_gyro-y_gyro_offset)*T2_imu[1] + (accel_t_gyro.value.z_gyro-z_gyro_offset)*T2_imu[2]);
-  //int16_t Grz = (accel_t_gyro.value.x_gyro*T3_imu[0] + accel_t_gyro.value.y_gyro*T3_imu[1] + accel_t_gyro.value.z_accel*T3_imu[2]);
+  int16_t Grx = ((accel_t_gyro.value.x_gyro-x_gyro_offset)*T1_imu_inv[0] + (accel_t_gyro.value.y_gyro-y_gyro_offset)*T1_imu_inv[1] + (accel_t_gyro.value.z_gyro-z_gyro_offset)*T1_imu_inv[2]);
+  int16_t Gry = ((accel_t_gyro.value.x_gyro-x_gyro_offset)*T2_imu_inv[0] + (accel_t_gyro.value.y_gyro-y_gyro_offset)*T2_imu_inv[1] + (accel_t_gyro.value.z_gyro-z_gyro_offset)*T2_imu_inv[2]);
+  //int16_t Grz = (accel_t_gyro.value.x_gyro*T3_imu_inv[0] + accel_t_gyro.value.y_gyro*T3_imu_inv[1] + accel_t_gyro.value.z_accel*T3_imu_inv[2]);
   
   pitchRollRate[0] = ((float)Gry)*gyroToRadsPSec;//Pitch rate expressed in rads/sec. 
   pitchRollRate[1] = ((float)Grx)*gyroToRadsPSec;//Roll rate expressed in rads/sec
@@ -73,7 +93,7 @@ int MPU6050_Gyro_Pitch_Roll_Rate(float* pitchRollRate){
 
 float complFilterPitch(float dt, float acc_angle, float gyro_rate){
     //Init cutoff frequency and some static variables
-    static float wc = 64.0;
+    static float wc = 64.0;                           //Cutoff frequency (May be changed)
     static float acc_angle_prev = 0;                  // Angle from accelerometer (previous);
     static float acc_angle_filt_prev = 0;             // Filtered angle from accelerometer (previous);
     static float gyro_rate_prev = 0;                  // Angle RATE from gyro (previous)
@@ -92,7 +112,7 @@ float complFilterPitch(float dt, float acc_angle, float gyro_rate){
     gyro_angle_prev = gyro_angle;
     gyro_angle_filt_prev = gyro_angle_filt;
     // Combine filtered estimations
-    return gyro_angle_filt + acc_angle_filt;
+    return (gyro_angle_filt + acc_angle_filt);
 }
 
 float complFilterRoll(float dt, float acc_angle, float gyro_rate){
@@ -116,7 +136,7 @@ float complFilterRoll(float dt, float acc_angle, float gyro_rate){
     gyro_angle_prev = gyro_angle;
     gyro_angle_filt_prev = gyro_angle_filt;
     // Combine filtered estimations
-    return gyro_angle_filt + acc_angle_filt;
+    return (gyro_angle_filt + acc_angle_filt);
 }
 //Filter of height sensor value. 
 // 1. Use roll and pitch to get vertical distance to horizontal plane (To prevent vertical oscillations due to tilting oscillation)
