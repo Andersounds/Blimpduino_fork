@@ -54,7 +54,7 @@
 /*Here you can reverse your motors*/
 #define m0_rev 1
 #define m1_rev 0
-#define m2_rev 1
+#define m2_rev 0
 #define m3_rev 0
 
 VL53L1X distanceSensor;
