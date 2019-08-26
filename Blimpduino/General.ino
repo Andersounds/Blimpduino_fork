@@ -22,8 +22,6 @@ void Dameon_Loop(void) { //Background stuff.
     float gyro_P_R[2] = {0,0};
     MPU6050_Acc_Pitch_Roll_Angle(acc_P_R);
     MPU6050_Gyro_Pitch_Roll_Rate(gyro_P_R);
-    //SerialUSB.print("DT: ");SerialUSB.print(dt);SerialUSB.print(", -MPU dt: ");SerialUSB.print(MPU_dt);SerialUSB.print(" rad\n");
-   // SerialUSB.print("-Pitch: ");SerialUSB.print(acc_P_R[0]);SerialUSB.print(", -Roll: ");SerialUSB.print(acc_P_R[1]);SerialUSB.print(" rad\n");
     pitch_rpi = complFilterPitch(MPU_dt, acc_P_R[0], gyro_P_R[0]);
     roll_rpi = complFilterRoll(MPU_dt, acc_P_R[1], gyro_P_R[1]);
     /*-----------------FINAL LINE OF CUSTOM CODE------------------*/
@@ -62,11 +60,6 @@ void Dameon_Loop(void) { //Background stuff.
    //SerialUSB.print("\t");
    //SerialUSB.println(rpi_height);
   
-/*   
-   SerialUSB.print(pitch_rpi*RAD2GRAD);
-   SerialUSB.print("\t");
-   SerialUSB.println(roll_rpi*RAD2GRAD);
-*/ 
   }
   /**************************************************/
   if (newMessage == 1) //Checking new UDP data from APP.
