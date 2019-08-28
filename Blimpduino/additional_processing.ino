@@ -94,10 +94,37 @@ int MPU6050_Gyro_Pitch_Roll_Rate(float* pitchRollRate){
 
   return 1;
 }
+//Just LP filter for gyro. To be used before integration
+float LPfilterGyroRoll(float dt, float rate){
+//Init cutoff frequency and some static variables
+    static float wc = 30.0;                           //Cutoff frequency (May be changed) We are setting a pretty  high frequency here
+    static float rate_prev = 0;
+    static float rate_filt_prev = 0;
+    //Apply LP filter
+    float rate_filt = ( (rate + rate_prev)*dt*wc + rate_filt_prev*(2-dt*wc) ) / (2+dt*wc);
+    //Shift values
+    rate_prev = rate;
+    rate_filt_prev = rate_filt;
+    return rate_filt;
+}
+//Another instance of function above, for pitch angle
+float LPfilterGyroPitch(float dt, float rate){
+//Init cutoff frequency and some static variables
+    static float wc = 30.0;                           //Cutoff frequency (May be changed)
+    static float rate_prev = 0;
+    static float rate_filt_prev = 0;
+    //Apply LP filter
+    float rate_filt = ( (rate + rate_prev)*dt*wc + rate_filt_prev*(2-dt*wc) ) / (2+dt*wc);
+    //Shift values
+    rate_prev = rate;
+    rate_filt_prev = rate_filt;
+    return rate_filt;
+}
 
-float complFilterPitch(float dt, float acc_angle, float gyro_rate){
+
+float complFilterPitch(float dt, float acc_angle, float gyro_rate_raw){
     //Init cutoff frequency and some static variables
-    static float wc = 64.0;                           //Cutoff frequency (May be changed)
+    static float wc = 10.0;                           //Cutoff frequency (May be changed)
     static float acc_angle_prev = 0;                  // Angle from accelerometer (previous);
     static float acc_angle_filt_prev = 0;             // Filtered angle from accelerometer (previous);
     static float gyro_rate_prev = 0;                  // Angle RATE from gyro (previous)
@@ -105,6 +132,8 @@ float complFilterPitch(float dt, float acc_angle, float gyro_rate){
     static float gyro_angle_filt_prev = 0;            // Filtered angle from gyro (previous)  
     // LP filt of accelerometer angle (1st order LP discretized using tustin)
     float acc_angle_filt = ( (acc_angle + acc_angle_prev)*dt*wc + acc_angle_filt_prev*(2-dt*wc) ) / (2+dt*wc);
+    //Lowpass of raw gyro rate value
+    float gyro_rate = LPfilterGyroPitch(dt,gyro_rate_raw);
     //Integrate gyro rate to angle using tustin estimation
     float gyro_angle = gyro_angle_prev + (gyro_rate+gyro_rate_prev)*dt/2;
     // HP filt of integrated gyro angle (1st order HP dicretized using tustin)
@@ -119,9 +148,9 @@ float complFilterPitch(float dt, float acc_angle, float gyro_rate){
     return (gyro_angle_filt + acc_angle_filt);
 }
 
-float complFilterRoll(float dt, float acc_angle, float gyro_rate){
+float complFilterRoll(float dt, float acc_angle, float gyro_rate_raw){
     //Init cutoff frequency and some static variables
-    static float wc = 64.0;
+    static float wc = 10.0;
     static float acc_angle_prev = 0;                  // Angle from accelerometer (previous);
     static float acc_angle_filt_prev = 0;             // Filtered angle from accelerometer (previous);
     static float gyro_rate_prev = 0;                  // Angle RATE from gyro (previous)
@@ -129,6 +158,8 @@ float complFilterRoll(float dt, float acc_angle, float gyro_rate){
     static float gyro_angle_filt_prev = 0;            // Filtered angle from gyro (previous)  
     // LP filt of accelerometer angle (1st order LP discretized using tustin)
     float acc_angle_filt = ( (acc_angle + acc_angle_prev)*dt*wc + acc_angle_filt_prev*(2-dt*wc) ) / (2+dt*wc);
+    //Lowpass of raw gyro rate value
+    float gyro_rate = LPfilterGyroRoll(dt,gyro_rate_raw);
     //Integrate gyro rate to angle using tustin estimation
     float gyro_angle = gyro_angle_prev + (gyro_rate+gyro_rate_prev)*dt/2;
     // HP filt of integrated gyro angle (1st order HP dicretized using tustin)

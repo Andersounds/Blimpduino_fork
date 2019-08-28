@@ -292,7 +292,7 @@ void loop()
   send_msg_rpi_00(1); //Send i2c message 00 to rpi every millisecond... //FRED
   //printGyro();
   //printAccel();
-  //printUAVRollPitch(3);
+  //printUAVRollPitch(10);
   /**************************************************/
 
   /*Mode selector is better known as System State Selector.
