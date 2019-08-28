@@ -119,7 +119,7 @@ int send_msg_rpi_00(int refreshRate){
     static long timer = 0; //Setting timer
     count_print ++;
     int stat = 100; //Return status 100 if it is not yet time to send msg
-    if((millis() - timer) > refreshRate){
+    if((millis() - timer) > refreshRate) {
         //Calculate dist and approcimated height, scaled to meters
         float lidar_dist_m =(float)height/1000.0; // [m]
         float rpi_height_m = ((float)rpi_height )/1000.0;
@@ -141,8 +141,8 @@ int send_msg_rpi_00(int refreshRate){
             SerialUSB.println(pitch_rpi*RAD2GRAD);
             count_print = 0;
         }
-    }
     timer = millis();//Reset timer
+    }
     return stat;
 }
 
