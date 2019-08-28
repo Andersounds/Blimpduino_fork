@@ -45,10 +45,14 @@ void printGyro(void){
     SerialUSB.print("\t");
     SerialUSB.println(Gpz);
 }
-void printUAVRollPitch(void){
-    SerialUSB.print(roll_rpi*RAD2GRAD);
-    SerialUSB.print("\t");
-    SerialUSB.println(pitch_rpi*RAD2GRAD);
+void printUAVRollPitch(int refreshRate){
+    static long timer = 0; //Setting timer
+    if((millis() - timer) > refreshRate){
+        SerialUSB.print(roll_rpi*RAD2GRAD);
+        SerialUSB.print("\t");
+        SerialUSB.println(pitch_rpi*RAD2GRAD);
+        timer = millis();//Reset timer
+    }
 }
 /* This function takes IMU acceleration values, transforms them from IMU to UAV frame according to the global T-matrix (T1_imu_inv, T2_imu_inv,T3_imu_inv)
  * It then uses the acceleration values to calculate the pitch and roll angle of the UAV within the range +-pi/2. Angles may not superceed these limit
