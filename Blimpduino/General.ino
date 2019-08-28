@@ -194,8 +194,8 @@ void altitudeHold(void) {
 
     error_h_old = error_h;
     error_h = (target_height - height);
-    kp_h = 0.3; //0.22; //0.15 //0.075; //0.2 //22
-    kd_h = 0.35; //0.3 //0.15; //0.10;  //0.15
+    kp_h = 0.15;//0.3; //0.22; //0.15 //0.075; //0.2 //22 -- 0.3 is default
+    kd_h = 0.15;//0.35; //0.3 //0.15; //0.10;  //0.15     -- 0.35 is default
     control_h = 0 + (kp_h * error_h) + (kd_h * (error_h - error_h_old) / height_dt);
     //if (control_h > 0) {
     //  control_h = (control_h * 4);
